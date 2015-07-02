@@ -47,7 +47,7 @@ namespace ks {
 		template<typename T>
 		void copy_into( if_copyable_t<T> *& pDest, const T* pSource, const size_t pSize )
 		{
-			memcpy(pDest, pSource, sizeof(T)*pSize);
+			memcpy(pDest, pSource, sizeof(T) * pSize);
 		}
 
 		template<typename T>
@@ -74,13 +74,13 @@ namespace ks {
 		template<typename T, class TAllocator>
 		void allocate( if_copyable_t<T> *& pDest, const size_t pSize, TAllocator& pAllocator)
 		{
-			pDest = (T *)pAllocator.allocate( sizeof(T) * pSize );
+			pDest = pAllocator.allocate( pSize );
 		}
 
 		template<typename T, class TAllocator>
 		void allocate( if_non_copyable_t<T> *& pDest, const size_t pSize, TAllocator& pAllocator)
 		{
-			pDest = (T *)pAllocator.allocate( sizeof(T) * pSize );
+			pDest = pAllocator.allocate( pSize );
 			for ( size_t i = 0; i < pSize; ++i )
 				pAllocator.construct( pDest + i, T() );
 		}
@@ -147,7 +147,7 @@ namespace ks {
 
 		ReverseIterator& operator++()
 		{
-			if (mEnd <= mBegin)		// TODO: optimize away in Release config
+			if (mEnd <= mBegin)
 			{
 				mEnd = mBegin = nullptr;
 			}
@@ -200,6 +200,7 @@ namespace ks {
 		typedef typename ReverseIterator<T>	reverse_iterator;
 
 		size_t size() const				{ return _size;			}
+		size_t capacity() const			{ return _capacity;		}
 		bool any() const 				{ return _size != 0;	}
 		bool empty() const				{ return _size == 0;	}
 
@@ -233,7 +234,8 @@ namespace ks {
 			const size_t prev_size = _size;
 			resize( new_size );
 
-			details::duff_fill(_begin + prev_size, pFillValue, _size);
+			if( _size > prev_size )
+				details::duff_fill(_begin + prev_size, pFillValue, _size - prev_size );
 		}
 
 		void reserve(size_t new_capacity)
@@ -261,20 +263,11 @@ namespace ks {
 			_capacity	= new_capacity;
 		}
 
-		void grow(size_t min_capacity = 0)
-		{
-			size_t new_capacity = _capacity + (_capacity >> 3) + 8;
-			if (new_capacity < min_capacity)
-				new_capacity = min_capacity;
-			set_capacity(new_capacity);
-		}
+		void push_back(const T &item)				{ emplace_back( std::move(T(item)) ); }
 
-		void push_back(const T &item)
-		{
-			push_back( std::move(T(item)) );
-		}
+		void push_back(T&& item)					{ emplace_back(std::move(item)); }
 
-		void push_back(T&& item)
+		void emplace_back(T&& item)
 		{
 			if (_size + 1 > _capacity)
 				grow();
@@ -362,12 +355,6 @@ namespace ks {
 		T & at(size_t i)						{ return operator[](i); }
 		const T & at(size_t i) const			{ return operator[](i); }
 
-		void explicit_copy( Array & pDest, const Array & pSource)
-		{
-			const size_t n = pSource._size;
-			pDest.resize(n);
-			details::copy_into( pDest._begin, pSource._begin, n );
-		}
 
 #if !KS_ARRAY_MOVE_SEMANTICS_ONLY
 
@@ -387,9 +374,15 @@ namespace ks {
 			return *this;
 		}
 #else
-	private:
-		Array(const Array &other);
-		Array &operator=(const Array &other);
+		void explicit_copy( const Array & pSource )
+		{
+			const size_t n = pSource._size;
+			resize(n);
+			details::copy_into( _begin, pSource._begin, n );
+		}
+
+		Array(const Array &) = delete;
+		Array &operator=(const Array &) = delete;
 #endif
 
 
@@ -398,6 +391,15 @@ namespace ks {
 		size_t		_size;
 		size_t		_capacity;
 		TAllocator	_allocator;		// don't use directly, rather redirect via details::
+
+
+		void grow(size_t min_capacity = 0)
+		{
+			size_t new_capacity = _capacity + (_capacity >> 2) + 8;
+			if (new_capacity < min_capacity)
+				new_capacity = min_capacity;
+			set_capacity(new_capacity);
+		}
 	};
 
 
