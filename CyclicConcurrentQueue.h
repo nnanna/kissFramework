@@ -30,8 +30,14 @@ SOFTWARE.
 
 #include "atomics.h"
 
+typedef unsigned ksU32;
+
 namespace ks
 {
+	#ifndef CACHE_LINE_SIZE
+	#define CACHE_LINE_SIZE 64
+	#endif
+	
 	template<typename T> struct strip_ref		{ typedef T type; };
 
 	template<typename T> struct strip_ref<T&>	{ typedef T type; };
@@ -40,10 +46,11 @@ namespace ks
 	template <typename T>
 	typename strip_ref<T>::type&& move(T&& arg)	{ return static_cast<typename strip_ref<T>::type&&>(arg); }
 
-	template<bool isMultipleOfTwo> size_t modulus( size_t a, size_t b );
+	template<bool isPowerOfTwo> ksU32 pseudo_modulus( ksU32 a, ksU32 b );
 
-	template<> 					size_t modulus<true>( size_t a, size_t b )		{ return a & (b - 1); }
-	template<> 					size_t modulus<false>( size_t a, size_t b )		{ return a % b; }
+	template<> inline ksU32 pseudo_modulus<true>( ksU32 a, ksU32 b )	{ return a & b; }
+	template<> inline ksU32 pseudo_modulus<false>( ksU32 a, ksU32 b )	{ return a % (b + 1); }
+	
 }
 
 
@@ -73,94 +80,104 @@ public:
 		const bool	valid;
 	};
 
-	CyclicConcurrentQueue( const size_t pCapacity ) :
-		mCapacity( pCapacity + TAILHEAD_DIVIDER ),
-		misMultipleOfTwo( (mCapacity & ( mCapacity - 1 )) == 0 ),
+	CyclicConcurrentQueue( const ksU32 pCapacity ) :
+		mCapacity( pCapacity ),
+		mIsPowerOfTwo(((pCapacity + 1) & pCapacity) == 0),
 		mHead(0),
 		mReadTail(0),
-		mWriteTail(0),
-		mSize(0)
+		mWriteTail(0)
 	{
-		mItems	= new T [ mCapacity ];
+		mItems	= new T [ mCapacity + TAILHEAD_DIVIDER ];
 	}
 
 	CyclicConcurrentQueue( const CyclicConcurrentQueue& pOther ) = delete;
 
 	~CyclicConcurrentQueue()	{ delete [] mItems; }
 
-	bool enqueue( T&& pItem )	{ return misMultipleOfTwo ? enqueue<true>( ks::move(pItem) ) : enqueue<false>( ks::move(pItem) ); }
+	void enqueue( T&& pItem )	{ mIsPowerOfTwo ? enqueue<true>( ks::move(pItem) ) : enqueue<false>( ks::move(pItem) ); }
 
-	queue_item	dequeue()		{ return misMultipleOfTwo ? dequeue<true>() : dequeue<false>(); }
+	queue_item	dequeue()		{ return mIsPowerOfTwo ? dequeue<true>() : dequeue<false>(); }
 
 
-	bool	full() const		{ return next<false>(mWriteTail) == mHead; }
-	bool	empty() const		{ return mHead == mWriteTail; }
-	size_t	size() const		{ return mSize; }
+	inline bool full() const		{ return next<false>(mWriteTail) == mHead; }
+	inline bool empty() const		{ return mHead == mReadTail; }
+	
+	ksU32 size() const
+	{
+		const ksU32 currentTail = mReadTail;
+		const ksU32 currentHead = mHead;
+		if( currentTail < currentHead )
+		{
+			return (mCapacity - currentHead) + currentTail;
+		}
+		else
+		{
+			return currentTail - currentHead;
+		}
+	}
 
 private:
-	template<bool isMultipleOfTwo>
-	size_t next( size_t pFrom ) const	{ return ks::modulus<isMultipleOfTwo>( pFrom + 1, mCapacity ); }
+	template<bool isPowerOfTwo>
+	inline ksU32 next(ksU32 pFrom) const	{ return ks::pseudo_modulus<isPowerOfTwo>(pFrom + 1, mCapacity); }
 
 
-	template<bool isMultipleOfTwo>
-	bool enqueue( T&& pItem )
+	template<bool isPowerOfTwo>
+	void enqueue( T&& pItem )
 	{
-		bool available( false );
-		size_t index(0), nextTail(0);
+		ksU32 index(0), nextTail(0), cas(1);
 		do
 		{
 			index			= mWriteTail;
-			nextTail		= next<isMultipleOfTwo>( index );
-			available		= (nextTail != mHead) || (index != mWriteTail);
-		}while( available && atomic_compare_and_swap( &mWriteTail, index, nextTail ) == nextTail );
+			nextTail		= next<isPowerOfTwo>( index );
+		} while ((nextTail != mHead) && (cas = atomic_compare_and_swap(&mWriteTail, index, nextTail)) != index);
 
-		if( available )
+		if (cas == index)
 		{
 			mItems[ index ]	= ks::move( pItem );
 			WRITE_BARRIER;
-			while( atomic_compare_and_swap( &mReadTail, index, nextTail ) == nextTail )
+			while( atomic_compare_and_swap( &mReadTail, index, nextTail ) != index )
 			{
 				THREAD_YIELD;
 			}
-			atomic_increment( &mSize );
 		}
 		else
 		{
 			throw EnqueueException::eQueueFull;
 		}
-
-		return available;
 	}
 
-	template<bool isMultipleOfTwo>
+	template<bool isPowerOfTwo>
 	queue_item dequeue()
 	{
-		size_t index(0), head(0);
-		bool is_valid( false );
+		ksU32 index(0), nextHead(0), cas(1);
 		do
 		{
 			index		= mHead;
-			head		= next<isMultipleOfTwo>( index );
-			is_valid	= !empty();
-		}while( is_valid && atomic_compare_and_swap( &mHead, index, head ) == head );
+			nextHead	= next<isPowerOfTwo>(index);
+		} while (!empty() && (cas = atomic_compare_and_swap(&mHead, index, nextHead)) != index);
 
-		if( is_valid )
-		{
-			atomic_decrement( &mSize );
-		}
-
-		return queue_item( mItems[ index ], is_valid );	// ideally you'd wanna grab the data before incrementing mHead, no?
+		return queue_item(mItems[index], (cas == index));	// ideally you'd wanna grab the data before incrementing mHead, no?
 		// Generally, this is fine™ as long as the queue doesn't fill up quicker than it is consumed - which is a problem in itself - it should be adequately sized
 		// Options: use mWriteHead and mReadHead? Always copy the data in the do...while() (BAD)?
 	}
-
-	T*				mItems;
-	const size_t	mCapacity;
-	const bool		misMultipleOfTwo;
-	size_t			mHead;
-	size_t			mReadTail;
-	size_t			mWriteTail;
-	size_t			mSize;
+	
+	// 'technically wasteful' padding/alignment to eliminate false sharing.
+	// http://www.drdobbs.com/parallel/eliminate-false-sharing/217500206?pgno=4
+	
+	__declspec(align(CACHE_LINE_SIZE)) T*	mItems;
+	char pad0[ CACHE_LINE_SIZE - sizeof(T*) ];
+	
+	ksU32		mHead;
+	char pad1[ CACHE_LINE_SIZE - sizeof(ksU32) ];
+	
+	ksU32		mReadTail;
+	char pad2[ CACHE_LINE_SIZE - sizeof(ksU32) ];
+	
+	ksU32		mWriteTail;
+	char pad3[ CACHE_LINE_SIZE - sizeof(ksU32) ];
+	
+	const ksU32	mCapacity;
+	const bool	mIsPowerOfTwo;
 };
 
 #endif	// CYCLIC_CONCURRENT_QUEUE

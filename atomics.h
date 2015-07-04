@@ -32,9 +32,9 @@ SOFTWARE.
 
 #include "Windows.h"
 
-	#define atomic_compare_and_swap		InterlockedCompareExchange
-	#define atomic_increment			InterlockedIncrement
-	#define atomic_decrement			InterlockedDecrement
+	#define atomic_compare_and_swap(ptr, oldval, newval)	InterlockedCompareExchange(ptr, newval, oldval)
+	#define atomic_increment								InterlockedIncrement
+	#define atomic_decrement								InterlockedDecrement
 
 	#define WRITE_BARRIER				_WriteBarrier(); MemoryBarrier()
 	#define THREAD_YIELD				SwitchToThread()
