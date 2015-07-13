@@ -50,6 +50,19 @@ namespace ks
 
 	template<> inline ksU32 pseudo_modulus<true>( ksU32 a, ksU32 b )	{ return a & b; }
 	template<> inline ksU32 pseudo_modulus<false>( ksU32 a, ksU32 b )	{ return a % (b + 1); }
+
+	template<bool isSingleThreaded>
+	bool fail_compare_swap(ksU32& ptr, ksU32 oldVal, ksU32 newVal);		// double negative
+
+	template<>
+	inline bool fail_compare_swap<true>(ksU32& ptr, ksU32 oldVal, ksU32 newVal)	{ ptr = newVal; return false; }
+
+	template<>
+	inline bool fail_compare_swap<false>(ksU32& ptr, ksU32 oldVal, ksU32 newVal)
+	{
+		// first test (ptr != oldVal) to avoid a futile compare_swap call.
+		return atomic_compare_and_swap(&ptr, oldVal, newVal) != oldVal;
+	}
 	
 }
 
@@ -63,6 +76,12 @@ public:
 	enum EnqueueException
 	{
 		eQueueFull
+	};
+
+	enum CCQMode
+	{
+		ccq_multi = 0,
+		ccq_single
 	};
 
 	struct queue_item
@@ -92,15 +111,29 @@ public:
 
 	CyclicConcurrentQueue( const CyclicConcurrentQueue& pOther ) = delete;
 
-	~CyclicConcurrentQueue()	{ delete [] mItems; }
+	~CyclicConcurrentQueue()
+	{
+		delete [] mItems;
+	}
 
-	void enqueue( T&& pItem )	{ mIsPowerOfTwo ? enqueue<true>( ks::move(pItem) ) : enqueue<false>( ks::move(pItem) ); }
+	void enqueue(T&& pItem)	{ mIsPowerOfTwo ? enqueue<ccq_multi, true>(ks::move(pItem)) : enqueue<ccq_multi, false>(ks::move(pItem)); }
 
-	queue_item	dequeue()		{ return mIsPowerOfTwo ? dequeue<true>() : dequeue<false>(); }
+	queue_item	dequeue()	{ return mIsPowerOfTwo ? dequeue<ccq_multi, true>() : dequeue<ccq_multi, false>(); }
+
+	void enqueue_singlethreaded(T&& pItem)
+	{
+		mIsPowerOfTwo ? enqueue<ccq_single, true>(ks::move(pItem)) : enqueue<ccq_single, false>(ks::move(pItem));
+	}
+
+	queue_item	dequeue_singlethreaded()
+	{
+		return mIsPowerOfTwo ? dequeue<ccq_single, true>() : dequeue<ccq_single, false>();
+	}
 
 
 	inline bool full() const		{ return next<false>(mWriteTail) == mHead; }
 	inline bool empty() const		{ return mHead == mReadTail; }
+	inline void clear()				{ mHead = mReadTail = mWriteTail = 0; }
 	
 	ksU32 size() const
 	{
@@ -121,23 +154,32 @@ private:
 	inline ksU32 next(ksU32 pFrom) const	{ return ks::pseudo_modulus<isPowerOfTwo>(pFrom + 1, mCapacity); }
 
 
-	template<bool isPowerOfTwo>
+	template<CCQMode mode, bool isPowerOfTwo>
 	void enqueue( T&& pItem )
 	{
-		ksU32 index(0), nextTail(0), cas(1);
+		ksU32 index(0), nextTail(0);
+		bool failed(true);
 		do
 		{
 			index			= mWriteTail;
 			nextTail		= next<isPowerOfTwo>( index );
-		} while ((nextTail != mHead) && (cas = atomic_compare_and_swap(&mWriteTail, index, nextTail)) != index);
+		} while ((nextTail != mHead) && (failed = ks::fail_compare_swap<mode>(mWriteTail, index, nextTail)) );
 
-		if (cas == index)
+		if (!failed)
 		{
 			mItems[ index ]	= ks::move( pItem );
-			WRITE_BARRIER;
-			while( atomic_compare_and_swap( &mReadTail, index, nextTail ) != index )
+			//WRITE_BARRIER;
+
+			ksU32 timeout(0);
+			// first test (mReadTail != index) to avoid a futile compare_swap call.
+			while ((mReadTail != index) || ks::fail_compare_swap<mode>(mReadTail, index, nextTail))
 			{
-				THREAD_YIELD;
+				// http://www.codeproject.com/Articles/184046/Spin-Lock-in-C
+				if (timeout < CONTEXT_SWITCH_LATENCY)
+					THREAD_YIELD;
+				else
+					THREAD_SWITCH;
+				++timeout;
 			}
 		}
 		else
@@ -146,17 +188,19 @@ private:
 		}
 	}
 
-	template<bool isPowerOfTwo>
+	template<CCQMode mode, bool isPowerOfTwo>
 	queue_item dequeue()
 	{
-		ksU32 index(0), nextHead(0), cas(1);
+		ksU32 index(0), nextHead(0);
+		bool available(false);
 		do
 		{
 			index		= mHead;
 			nextHead	= next<isPowerOfTwo>(index);
-		} while (!empty() && (cas = atomic_compare_and_swap(&mHead, index, nextHead)) != index);
+			available	= !empty();
+		} while (available && ks::fail_compare_swap<mode>(mHead, index, nextHead));
 
-		return queue_item(mItems[index], (cas == index));	// ideally you'd wanna grab the data before incrementing mHead, no?
+		return queue_item(mItems[index], available);	// ideally you'd wanna grab the data before incrementing mHead, no?
 		// Generally, this is fine™ as long as the queue doesn't fill up quicker than it is consumed - which is a problem in itself - it should be adequately sized
 		// Options: use mWriteHead and mReadHead? Always copy the data in the do...while() (BAD)?
 	}
@@ -178,6 +222,14 @@ private:
 	
 	const ksU32	mCapacity;
 	const bool	mIsPowerOfTwo;
+
+public:
+	// it appears that if your threads exceed your processors, it's better to call SwitchToThread() on windows
+	// since we default to YieldProcessor, this value defines the number of attempts before doing this
+	static ksU32 CONTEXT_SWITCH_LATENCY;
 };
+
+template<typename T>
+ksU32 CyclicConcurrentQueue<T>::CONTEXT_SWITCH_LATENCY = 2;
 
 #endif	// CYCLIC_CONCURRENT_QUEUE

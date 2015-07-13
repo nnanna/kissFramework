@@ -37,7 +37,10 @@ SOFTWARE.
 	#define atomic_decrement								InterlockedDecrement
 
 	#define WRITE_BARRIER				_WriteBarrier(); MemoryBarrier()
-	#define THREAD_YIELD				SwitchToThread()
+	#define READ_BARRIER				_ReadBarrier(); MemoryBarrier()
+	#define THREAD_YIELD				YieldProcessor()
+	#define THREAD_SWITCH				SwitchToThread()
+	#define THREAD_SLEEP				Sleep
 
 #else	// __GNUC__
 
@@ -48,7 +51,10 @@ SOFTWARE.
 	#define atomic_decrement(x)			__sync_sub_and_fetch( x, 1 )
 
 	#define WRITE_BARRIER				asm volatile("": : :"memory"); __sync_synchronize()
+	#define READ_BARRIER				asm volatile("": : :"memory"); __sync_synchronize()
 	#define THREAD_YIELD				sched_yield()
+	#define THREAD_SWITCH				sched_yield()
+	#define THREAD_SLEEP				sleep
 
 #endif
 
