@@ -214,8 +214,8 @@ namespace ks {
 	public:
 		typedef std::forward_iterator_tag	iterator_category;
 		typedef T							value_type;
-		typedef uint32_t					difference_type;
-		typedef uint32_t					size_type;
+		typedef unsigned int				difference_type;
+		typedef unsigned int				size_type;
 		typedef value_type*					pointer;
 		typedef const value_type*			const_pointer;
 		typedef value_type&					reference;
@@ -318,7 +318,7 @@ namespace ks {
 		typedef const T*							const_pointer;
 		typedef T&									reference;
 		typedef const T&							const_reference;
-		typedef uint32_t							size_type;
+		typedef unsigned int						size_type;
 		typedef ptrdiff_t							difference_type;
 
 		typedef typename ReverseIterator<T>			reverse_iterator;
