@@ -30,7 +30,7 @@
 namespace ks {
 
 #if _DEBUG
-	#define KS_ASSERT( cond )		{ if( (cond)  == false ) __debugbreak(); }
+	#define KS_ASSERT( cond )		{ if( (cond) == false ) __debugbreak(); }
 #else
 	#define KS_ASSERT( cond )
 #endif
@@ -124,21 +124,17 @@ namespace ks {
 	}
 
 #if _DEBUG
-#define itr_checkContainerMismatch(x)				\
-	if( getAxis() != x.getAxis() )					\
-	{												\
-		KS_ASSERT( 0 && "Container mis-match!" );	\
-	}												\
-
-#define itr_setBegin(x)		mBegin(x),
-#define itr_mBegin			mBegin
-#define itr_copyBegin(x)	mBegin = x.mBegin
+	#define ITR_MISMATCH_CHECK(x)	if( Axis() != (x).Axis() ) { KS_ASSERT( 0 && "Container mis-match!" ); }
+	#define itr_setBegin(x)			mBegin(x),
+	#define itr_setEnd(x)			mEnd(x),
+	#define itr_copyBegin(x)		mBegin = x.mBegin
+	#define itr_copyEnd(x)			mEnd = x.mEnd
 #else
-	#define itr_checkContainerMismatch(x)
-
-#define itr_setBegin(x)
-#define itr_mBegin			nullptr
-#define itr_copyBegin(x)
+	#define ITR_MISMATCH_CHECK(x)
+	#define itr_setBegin(x)
+	#define itr_setEnd(x)
+	#define itr_copyBegin(x)
+	#define itr_copyEnd(x)
 #endif
 
 	template<typename T>
@@ -155,7 +151,7 @@ namespace ks {
 			}
 		}
 
-		bool operator==( const ReverseIterator& pOther ) const	{ itr_checkContainerMismatch(pOther); return mBegin == pOther.mBegin && mEnd == pOther.mEnd; }
+		bool operator==( const ReverseIterator& pOther ) const	{ ITR_MISMATCH_CHECK(pOther); return mBegin == pOther.mBegin && mEnd == pOther.mEnd; }
 		bool operator!=( const ReverseIterator& pOther ) const	{ return !operator==(pOther); }
 
 		T& operator->()					{ return *mEnd; }
@@ -196,7 +192,7 @@ namespace ks {
 
 	private:
 #if _DEBUG
-		size_t getAxis() const		{ return size_t(mBegin); }
+		size_t Axis() const		{ return size_t(mBegin); }
 #endif
 		T* mBegin;
 		T* mEnd;
@@ -204,89 +200,129 @@ namespace ks {
 
 
 	template<typename T>
-	class ForwardIterator
+	class iterator_base
 	{
 #if _DEBUG
-#define ITR_CHECK_OUT_OF_BOUNDS( x )	if( mEnd < (mCaret + (x)) || (mCaret + (x)) < mBegin  ) { KS_ASSERT( 0 && "iterator out of bounds!" ); }
+#define ITR_BOUNDS_CHECK( x )	if( mEnd < (mCaret + (x)) || (mCaret + (x)) < mBegin  ) { KS_ASSERT( 0 && "iterator out of bounds!" ); }
 #else
-#define ITR_CHECK_OUT_OF_BOUNDS( x )
+#define ITR_BOUNDS_CHECK( x )
 #endif
 	public:
-		typedef std::forward_iterator_tag	iterator_category;
-		typedef T							value_type;
-		typedef unsigned int				difference_type;
-		typedef unsigned int				size_type;
-		typedef value_type*					pointer;
-		typedef const value_type*			const_pointer;
-		typedef value_type&					reference;
-		typedef const value_type&			const_reference;
+		typedef std::random_access_iterator_tag		iterator_category;
+		typedef T									value_type;
+		typedef int									difference_type;
+		typedef unsigned int						size_type;
+		typedef value_type*							pointer;
+		typedef const value_type*					const_pointer;
+		typedef value_type&							reference;
+		typedef const value_type&					const_reference;
 
-		ForwardIterator() : itr_setBegin(nullptr) mCaret(nullptr), mEnd(nullptr)
+		iterator_base() : itr_setBegin(nullptr) itr_setEnd(nullptr) mCaret(nullptr)
 		{}
-		ForwardIterator(std::nullptr_t) : itr_setBegin(nullptr) mCaret(nullptr), mEnd(nullptr)
+		iterator_base(pointer pBegin, pointer pEnd, pointer pCaret) : itr_setBegin(pBegin) itr_setEnd(pEnd) mCaret(pCaret)
 		{}
-		ForwardIterator( pointer pBegin, pointer pCaret, pointer pEnd ) : itr_setBegin(pBegin) mCaret(pCaret), mEnd(pEnd)
-		{}
+		iterator_base( const iterator_base& pOther )				{ copy(pOther); }
 
-		reference operator[](size_type i)								{ ITR_CHECK_OUT_OF_BOUNDS( i ); return mCaret[i]; }
-		const_reference operator[](size_type i) const					{ ITR_CHECK_OUT_OF_BOUNDS( i ); return mCaret[i]; }
+		bool operator==( const iterator_base& pOther ) const		{ return equals(pOther); }
+		bool operator!=( const iterator_base& pOther ) const		{ return !equals(pOther); }
 
-		ForwardIterator& operator=( const ForwardIterator& pOther )		{ return copy(pOther); }
-
-		bool operator==( const ForwardIterator& pOther ) const			{ itr_checkContainerMismatch(pOther); return mCaret == pOther.mCaret; }
-		bool operator!=( const ForwardIterator& pOther ) const			{ return !operator==(pOther); }
-
-		pointer operator->()											{ return mCaret; }
-		const_pointer operator->() const								{ return mCaret; }
-		reference operator*()											{ return *mCaret; }
-		const_reference operator*() const								{ return *mCaret; }
-
-		ForwardIterator& operator++()									{ increment(); return *this; }
-		ForwardIterator operator++(int)									{ ForwardIterator prev(*this); increment(); return prev; }
-
-		ForwardIterator& operator--()									{ decrement(); return *this; }
-		ForwardIterator operator--(int)									{ ForwardIterator prev(*this); decrement(); return prev; }
-
-		ForwardIterator& operator+=(const int pCount)					{ ITR_CHECK_OUT_OF_BOUNDS( pCount ); mCaret += pCount; return *this; }
-
-		ForwardIterator& operator-=(const int pCount)					{ ITR_CHECK_OUT_OF_BOUNDS(-pCount ); mCaret -= pCount; return *this; }
-
-		ForwardIterator operator+(const int pCount) const				{ ITR_CHECK_OUT_OF_BOUNDS( pCount ); return ForwardIterator( itr_mBegin, mCaret + pCount, mEnd ); }
-
-		ForwardIterator operator-(const int pCount) const				{ ITR_CHECK_OUT_OF_BOUNDS(-pCount ); return ForwardIterator( itr_mBegin, mCaret - pCount, mEnd ); }
-
-		difference_type operator-(const ForwardIterator& pRHS) const	{ itr_checkContainerMismatch(pRHS); return (mCaret - pRHS.mCaret); }
-		bool operator<(const ForwardIterator& pRHS) const				{ itr_checkContainerMismatch(pRHS); return mCaret < pRHS.mCaret; }
-		bool operator>(const ForwardIterator& pRHS) const				{ itr_checkContainerMismatch(pRHS); return mCaret > pRHS.mCaret; }
-
-	private:
-
-		ForwardIterator& copy( const ForwardIterator& pOther )
+	protected:
+		void copy( const iterator_base& pOther )
 		{
 			mCaret	= pOther.mCaret;
-			mEnd	= pOther.mEnd;
 			itr_copyBegin( pOther );
+			itr_copyEnd(pOther);
+		}
+		void increment()											{ ITR_BOUNDS_CHECK( 1 ); ++mCaret; }
+		void decrement()											{ ITR_BOUNDS_CHECK(-1 ); --mCaret; }
+		void jump( const difference_type pCount )					{ ITR_BOUNDS_CHECK( pCount ); mCaret += pCount; }
 
-			return *this;
-		}
-		void increment()
-		{
-			ITR_CHECK_OUT_OF_BOUNDS( 1 );
-			++mCaret;
-		}
+		bool equals( const iterator_base& pOther ) const			{ ITR_MISMATCH_CHECK(pOther); return mCaret == pOther.mCaret; }
 
-		void decrement()
-		{
-			ITR_CHECK_OUT_OF_BOUNDS( -1 );
-			--mCaret;
-		}
+		difference_type minus(const iterator_base& pRHS) const		{ ITR_MISMATCH_CHECK(pRHS); return (mCaret - pRHS.mCaret); }
+		bool lessthan(const iterator_base& pRHS) const				{ ITR_MISMATCH_CHECK(pRHS); return mCaret < pRHS.mCaret; }
+		bool morethan(const iterator_base& pRHS) const				{ ITR_MISMATCH_CHECK(pRHS); return mCaret > pRHS.mCaret; }
+
+		reference at(size_type i)									{ ITR_BOUNDS_CHECK( i ); return mCaret[i]; }
+		const_reference at(size_type i) const						{ ITR_BOUNDS_CHECK( i ); return mCaret[i]; }
 
 #if _DEBUG
-		size_type getAxis() const		{ return size_type(mBegin); }
+		size_type Axis() const										{ return size_type(mBegin); }
 		pointer	mBegin;
+		pointer	mEnd;
 #endif
 		pointer	mCaret;
-		pointer	mEnd;
+	};
+
+
+	template<typename T>
+	class ForwardIterator : public iterator_base<T>
+	{
+	public:
+		ForwardIterator() : iterator_base()
+		{}
+		ForwardIterator(std::nullptr_t) : iterator_base()
+		{}
+		ForwardIterator( pointer pBegin, pointer pEnd, pointer pCaret ) : iterator_base( pBegin, pEnd, pCaret )
+		{}
+
+		pointer operator->()											{ return mCaret; }
+		reference operator*()											{ return *mCaret; }
+		reference operator[](size_type i)								{ return at(i); }
+
+		// OVERIDES
+		ForwardIterator& operator++()									{ increment(); return *this; }
+		ForwardIterator operator++(difference_type)						{ ForwardIterator prev(*this); increment(); return prev; }
+
+		ForwardIterator& operator--()									{ decrement(); return *this; }
+		ForwardIterator operator--(difference_type)						{ ForwardIterator prev(*this); decrement(); return prev; }
+
+		ForwardIterator& operator+=(difference_type pCount)				{ jump(pCount); return *this; }
+		ForwardIterator& operator-=(difference_type pCount)				{ jump(-pCount); return *this; }
+
+		ForwardIterator operator+(difference_type pCount) const			{ ForwardIterator temp(*this); temp.jump(pCount); return temp; }
+		ForwardIterator operator-(difference_type pCount) const			{ ForwardIterator temp(*this); temp.jump(-pCount); return temp; }
+
+
+		difference_type operator-(const ForwardIterator& pRHS) const	{ return minus(pRHS); }
+		bool operator<(const ForwardIterator& pRHS) const				{ return lessthan(pRHS); }
+		bool operator>(const ForwardIterator& pRHS) const				{ return morethan(pRHS); }
+	};
+
+	template<typename T>
+	class ConstForwardIterator : public iterator_base<T>
+	{
+	public:
+		ConstForwardIterator() : iterator_base()
+		{}
+		ConstForwardIterator(std::nullptr_t) : iterator_base()
+		{}
+		ConstForwardIterator( pointer pBegin, pointer pEnd, pointer pCaret ) : iterator_base( pBegin, pEnd, pCaret )
+		{}
+		ConstForwardIterator( const ForwardIterator<T>& pOther )			{ copy(pOther); }
+
+		const_pointer operator->() const									{ return mCaret; }
+		const_reference operator*() const									{ return *mCaret; }
+		const_reference operator[](size_type i) const						{ return at(i); }
+		
+		// OVERIDES
+		ConstForwardIterator& operator=( const ForwardIterator<T>& pOther )	{ copy(pOther); return *this; }
+
+		ConstForwardIterator& operator++()									{ increment(); return *this; }
+		ConstForwardIterator operator++(difference_type)					{ ConstForwardIterator prev(*this); increment(); return prev; }
+
+		ConstForwardIterator& operator--()									{ decrement(); return *this; }
+		ConstForwardIterator operator--(difference_type)					{ ConstForwardIterator prev(*this); decrement(); return prev; }
+
+		ConstForwardIterator& operator+=(difference_type pCount)			{ jump(pCount); return *this; }
+		ConstForwardIterator& operator-=(difference_type pCount)			{ jump(-pCount); return *this; }
+
+		ConstForwardIterator operator+(difference_type pCount) const		{ ConstForwardIterator temp(*this); temp.jump(pCount); return temp; }
+		ConstForwardIterator operator-(difference_type pCount) const		{ ConstForwardIterator temp(*this); temp.jump(-pCount); return temp; }
+
+		difference_type operator-(const ConstForwardIterator& pRHS) const	{ return minus(pRHS); }
+		bool operator<(const ConstForwardIterator& pRHS) const				{ return lessthan(pRHS); }
+		bool operator>(const ConstForwardIterator& pRHS) const				{ return morethan(pRHS); }
 	};
 
 
@@ -295,18 +331,18 @@ namespace ks {
 	{
 #define KS_ARRAY_MOVE_SEMANTICS_ONLY	1		// Before turning this off, have you considered using std::vector? :P
 
-#define KS_USE_FORWARD_ITERATOR_CLASS	_DEBUG
+#define KS_USE_FORWARD_ITERATOR_CLASS	1		//_DEBUG
 
 #if _DEBUG
-#define CHECK_OUT_OF_BOUNDS( x )	if( (x) >= _size ) { KS_ASSERT( 0 && "Array out of bounds detected" ); }
+#define ARRAY_BOUNDS_CHECK( x )	if( (x) >= _size ) { KS_ASSERT( 0 && "Array out of bounds detected" ); }
 #else
-#define CHECK_OUT_OF_BOUNDS( x )
+#define ARRAY_BOUNDS_CHECK( x )
 #endif
 
 	public:
 #if KS_USE_FORWARD_ITERATOR_CLASS
 		typedef typename ForwardIterator<T>			iterator;
-		typedef typename ForwardIterator<T>			const_iterator;		// const*/ ForwardIterator<T>
+		typedef typename ConstForwardIterator<T>	const_iterator;
 
 #else
 		typedef typename T*							iterator;
@@ -330,9 +366,9 @@ namespace ks {
 		bool empty() const				{ return _size == 0;	}
 
 #if KS_USE_FORWARD_ITERATOR_CLASS
-		iterator begin() 				{ return iterator(_begin, _begin, _begin + _size);					}
+		iterator begin() 				{ return iterator(_begin, _begin + _size, _begin);					}
 		iterator end() 					{ return iterator(_begin, _begin + _size, _begin + _size );			}
-		const_iterator begin() const	{ return const_iterator(_begin, _begin, _begin + _size);			}
+		const_iterator begin() const	{ return const_iterator(_begin, _begin + _size, _begin);			}
 		const_iterator end() const		{ return const_iterator(_begin, _begin + _size, _begin + _size);	}
 #else
 		iterator begin() 				{ return _begin;			}
@@ -347,12 +383,12 @@ namespace ks {
 		reverse_iterator rbegin() const	{ return reverse_iterator(_begin, _begin + _size);	}
 		reverse_iterator rend() const	{ return reverse_iterator(_begin);					}
 
-		reference front() 				{ CHECK_OUT_OF_BOUNDS(0); return _begin[0];			}
-		const_reference front() const	{ CHECK_OUT_OF_BOUNDS(0); return _begin[0];			}
-		reference back() 				{ CHECK_OUT_OF_BOUNDS(_size - 1); return _begin[_size - 1];	}
-		const_reference back() const	{ CHECK_OUT_OF_BOUNDS(_size - 1); return _begin[_size - 1]; }
+		reference front() 				{ ARRAY_BOUNDS_CHECK(0); return _begin[0];			}
+		const_reference front() const	{ ARRAY_BOUNDS_CHECK(0); return _begin[0];			}
+		reference back() 				{ ARRAY_BOUNDS_CHECK(_size - 1); return _begin[_size - 1];	}
+		const_reference back() const	{ ARRAY_BOUNDS_CHECK(_size - 1); return _begin[_size - 1]; }
 
-		void pop_back()					{ CHECK_OUT_OF_BOUNDS(_size - 1); --_size; }
+		void pop_back()					{ ARRAY_BOUNDS_CHECK(_size - 1); --_size; }
 
 		void clear()					{ resize(0);}
 		void trim()						{ set_capacity(_size); }
@@ -408,7 +444,7 @@ namespace ks {
 		iterator erase( iterator item )
 		{
 			const size_type new_size = _size - 1;
-			CHECK_OUT_OF_BOUNDS( new_size );
+			ARRAY_BOUNDS_CHECK( new_size );
 			iterator next( item );
 
 			while (item < end() - 1)
@@ -419,7 +455,7 @@ namespace ks {
 			resize( new_size );
 
 #if KS_USE_FORWARD_ITERATOR_CLASS
-			return iterator( _begin, &(*next), _begin + _size );
+			return iterator( _begin, _begin + _size, &(*next) );
 #else
 			return next;
 #endif
@@ -429,7 +465,7 @@ namespace ks {
 		{
 			const size_type diff = pPos - begin();
 			resize( _size + 1 );
-			CHECK_OUT_OF_BOUNDS( diff );
+			ARRAY_BOUNDS_CHECK( diff );
 			
 			pPos = begin() + diff;
 
@@ -490,8 +526,8 @@ namespace ks {
 			}
 			return *this;
 		}
-		reference operator[](size_type i)				{ CHECK_OUT_OF_BOUNDS( i ); return _begin[i]; }
-		const_reference operator[](size_type i) const	{ CHECK_OUT_OF_BOUNDS( i ); return _begin[i]; }
+		reference operator[](size_type i)				{ ARRAY_BOUNDS_CHECK( i ); return _begin[i]; }
+		const_reference operator[](size_type i) const	{ ARRAY_BOUNDS_CHECK( i ); return _begin[i]; }
 
 		reference at(size_type i)						{ return operator[](i); }
 		const_reference at(size_type i) const			{ return operator[](i); }
