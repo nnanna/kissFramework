@@ -22,12 +22,12 @@
 #ifndef ENUMSTRING_H
 #define ENUMSTRING_H
 
-#include "../Common/Debug.h"
+#include <Debug.h>
 
 template<typename ENUMTYPE>
 struct EnumString
 {
-	template<kiss32 ENUMID>
+	template<ks32 ENUMID>
 	static const char* get();
 };
 
@@ -37,7 +37,7 @@ struct EnumString
 	{ return #EID; }									\
 
 
-template<kiss32 FROM>
+template<ks32 FROM>
 struct EnumLoop
 {
 	template<typename ENUMTYPE>
@@ -61,14 +61,14 @@ inline const char* EnumLoop<EID+1>::get(decltype(EID) pID)	\
 	return "MAXIMUS_EXTREMUS";								\
 }															\
 
-template<typename ENUMTYPE> template<kiss32 ENUMID>
+template<typename ENUMTYPE> template<ks32 ENUMID>
 const char* EnumString<ENUMTYPE>::get()
 {
 	KISS_ASSERT(0 && "This enum hasn't been exported/declared");
 	return "undeclared";
 }
 
-template<kiss32 FROM> template<typename ENUMTYPE>
+template<ks32 FROM> template<typename ENUMTYPE>
 inline const char* EnumLoop<FROM>::get(ENUMTYPE pID)
 {
 	if (pID == FROM)

@@ -27,7 +27,7 @@ public:
 	virtual ~IReflector()	{}
 	virtual const char*		ToString(const void* pValue) const = 0;
 	virtual const char*		Typename() const = 0;
-	virtual kissType		TypeID() const = 0;
+	virtual ksType			TypeID() const = 0;
 };
 
 
@@ -47,7 +47,7 @@ public:
 
 	const char*		ToString() const		{ return mInterface->ToString( mClient ); }
 	const char*		Typename() const		{ return mInterface->Typename(); }
-	kissType		TypeID() const			{ return mInterface->TypeID(); }
+	ksType		TypeID() const			{ return mInterface->TypeID(); }
 
 	const IReflector* operator->() const	{ return mInterface; }
 

@@ -31,7 +31,7 @@ public:
 
 	const char*		ToString(const void* pValue) const override;
 	const char*		Typename() const override;
-	kissU32			TypeID() const override;
+	ksU32			TypeID() const override;
 };
 
 template<typename T>
@@ -49,7 +49,7 @@ const char* EnumReflector<T>::ToString( const void* pValue) const
 }
 
 template<typename T>
-kissType EnumReflector<T>::TypeID() const		{ return TypeUID<T>::TypeID(); }
+ksType EnumReflector<T>::TypeID() const		{ return TypeUID<T>::TypeID(); }
 
 template<typename T>
 const char* EnumReflector<T>::Typename() const	{ return TypeUID<T>::Typename(); }

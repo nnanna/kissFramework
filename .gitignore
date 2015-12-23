@@ -1,1 +1,11 @@
 *.bak
+*.tlog
+*.obj
+*.pdb
+*.idb
+*.ilk
+*.exe
+*.suo
+*.sdf
+*.log
+*.opensdf

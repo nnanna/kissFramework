@@ -16,47 +16,84 @@
 /// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 /// WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //////////////////////////////////////////////////////////////////////////
+
 #ifndef TYPE_UID_H
 #define TYPE_UID_H
 
-#define NAME_MAX	64
-
-typedef kissU32			kissType;
-
-template<typename T>
-struct TypeUID
-{
-	static kissType		TypeID();
-	static const char*	Typename();
-};
-
-template<typename T>
-inline kissType TypeUID<T>::TypeID()				{ static char mID; return kissType(&mID); }
+#include <defines.h>
 
 
-template<>
-inline const char* TypeUID<int>::Typename()			{ return "int"; }
-
-template<>
-inline const char* TypeUID<bool>::Typename()		{ return "bool"; }
-
-template<>
-inline const char* TypeUID<float>::Typename()		{ return "float"; }
-
-template<typename T>
-inline const char* TypeUID<T>::Typename()
-{
-	static char tName[ NAME_MAX ] = { 0 };
-	if (tName[0] == 0)
-		sprintf_s(tName, NAME_MAX, "%08x", TypeID());
-
-	return tName;
-}
+namespace ks {
 
 
-#define DECLARE_TYPENAME(TType)					\
-template<>										\
-inline const char* TypeUID<TType>::Typename()	\
-{ return #TType; }								\
+	template<typename T>
+	struct TypeUID
+	{
+		static ksType		TypeID();
+		static const char*	Typename();
+	};
+
+	template<typename T>
+	inline ksType TypeUID<T>::TypeID()					{ static char mID; return ksType(&mID); }
+
+
+	template<>
+	inline const char* TypeUID<int>::Typename()			{ return "int"; }
+
+	template<>
+	inline const char* TypeUID<bool>::Typename()		{ return "bool"; }
+
+	template<>
+	inline const char* TypeUID<float>::Typename()		{ return "float"; }
+
+	template<typename T>
+	inline const char* TypeUID<T>::Typename()
+	{
+		static char tName[NAME_MAX] = { 0 };
+		if (tName[0] == 0)
+			sprintf_s(tName, NAME_MAX, "%08x", TypeID());
+
+		return tName;
+	}
+
+
+#define DECLARE_TYPENAME(TType)						\
+template<>											\
+inline const char* ks::TypeUID<TType>::Typename()	\
+	{ return #TType; }								\
+
+
+
+	struct UIDGenerator
+	{
+		UIDGenerator();
+
+		u32 Get(const u32 mask = 0);		// masking allows indirect support of UIDs that are less than 32bit
+		u32 GetAsync(const u32 mask = 0);
+
+		static const u32 INVALID_UID;
+
+	private:
+		volatile u32 mMarker;
+	};
+
+
+	template<class T>
+	class InstanceUIDGenerator
+	{
+	public:
+		static u32 Get()			{ return mGenerator.Get(); }
+		static u32 GetAsync()		{ return mGenerator.GetAsync(); }
+
+	protected:
+		static UIDGenerator	mGenerator;
+	};
+
+	template<class T>
+	UIDGenerator InstanceUIDGenerator<T>::mGenerator;
+
+
+} // namespace ks
+
 
 #endif

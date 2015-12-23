@@ -32,9 +32,12 @@ SOFTWARE.
 
 #include "Windows.h"
 
-	#define atomic_compare_and_swap(ptr, oldval, newval)	InterlockedCompareExchange(ptr, newval, oldval)
-	#define atomic_increment								InterlockedIncrement
-	#define atomic_decrement								InterlockedDecrement
+	#define atomic_compare_and_swap(ptr, oldval, newval)			InterlockedCompareExchange(ptr, newval, oldval)
+	#define atomic_compare_and_swap_pointer(ptr, oldval, newval)	InterlockedCompareExchangePointer(ptr, newval, oldval)
+	#define atomic_exchange_pointer(ptr, newval)					InterlockedExchangePointer(ptr, newval)
+	#define atomic_or_into(ptr, val)								InterlockedOr( (volatile long*)ptr, val )
+	#define atomic_increment										InterlockedIncrement
+	#define atomic_decrement										InterlockedDecrement
 
 	#define WRITE_BARRIER				_WriteBarrier(); MemoryBarrier()
 	#define READ_BARRIER				_ReadBarrier(); MemoryBarrier()
@@ -42,20 +45,27 @@ SOFTWARE.
 	#define THREAD_SWITCH				SwitchToThread()
 	#define THREAD_SLEEP				Sleep
 
+	#define ks_current_thread_id		GetCurrentThreadId
+	#define ks_thread_id				DWORD
+
 #else	// __GNUC__
 
 #include "sched.h"
 
-	#define atomic_compare_and_swap		__sync_val_compare_and_swap
+	#define atomic_compare_and_swap			__sync_val_compare_and_swap
+	#define atomic_compare_and_swap_pointer		__sync_val_compare_and_swap
+	#define atomic_exchange_pointer(ptr, newval)					InterlockedExchangePointer(ptr, newval)
 	#define atomic_increment(x)			__sync_add_and_fetch( x, 1 )
 	#define atomic_decrement(x)			__sync_sub_and_fetch( x, 1 )
 
 	#define WRITE_BARRIER				asm volatile("": : :"memory"); __sync_synchronize()
 	#define READ_BARRIER				asm volatile("": : :"memory"); __sync_synchronize()
 	#define THREAD_YIELD				sched_yield()
-	#define THREAD_SWITCH				sched_yield()
+	#define THREAD_SWITCH				asm volatile("pause\n": : :"memory")
 	#define THREAD_SLEEP				sleep
 
+
+	#define ks_thread_id				pthread_t
 #endif
 
 
