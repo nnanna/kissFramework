@@ -94,33 +94,41 @@ namespace ks {
 		}
 
 		template<typename T, class TAllocator>
-		void allocate( if_copyable_t<T> *& pDest, const size_t pSize, TAllocator& pAllocator)
+		void allocate( T*& pDest, const size_t pSize, TAllocator& pAllocator)
 		{
 			pDest = pAllocator.allocate( pSize );
 		}
 
+
 		template<typename T, class TAllocator>
-		void allocate( if_non_copyable_t<T> *& pDest, const size_t pSize, TAllocator& pAllocator)
+		void construct( if_copyable_t<T> * pDest, const size_t pSize, TAllocator& pAllocator )
+		{}
+
+		template<typename T, class TAllocator>
+		void construct( if_non_copyable_t<T> * pDest, const size_t pSize, TAllocator& pAllocator )
 		{
-			pDest = pAllocator.allocate( pSize );
-			for ( size_t i = 0; i < pSize; ++i )
-				pAllocator.construct( pDest + i, T() );
+			size_t i = 0;
+			switch ((pSize - i) & 7)
+			{
+			case 0:
+				while (i != pSize)
+				{
+					pAllocator.construct( pDest + i ); ++i;
+			case 7: pAllocator.construct( pDest + i ); ++i;
+			case 6: pAllocator.construct( pDest + i ); ++i;
+			case 5: pAllocator.construct( pDest + i ); ++i;
+			case 4: pAllocator.construct( pDest + i ); ++i;
+			case 3: pAllocator.construct( pDest + i ); ++i;
+			case 2: pAllocator.construct( pDest + i ); ++i;
+			case 1: pAllocator.construct( pDest + i ); ++i;
+				}
+			}
 		}
 
-
 		template<typename T, class TAllocator>
-		void deallocate( if_copyable_t<T> *& pBegin, const size_t pCapacity, TAllocator& pAllocator)
+		void construct( T * pDest, TAllocator& pAllocator, T&& pFillValue )
 		{
-			pAllocator.deallocate(pBegin, pCapacity);
-		}
-
-		template<typename T, class TAllocator>
-		void deallocate( if_non_copyable_t<T>*& pBegin, const size_t pCapacity, TAllocator& pAllocator)
-		{
-			for ( size_t i = 0; i < pCapacity; ++i )
-				pAllocator.destroy( pBegin + i );
-
-			pAllocator.deallocate(pBegin, pCapacity);
+			pAllocator.construct( pDest, std::move(pFillValue) );
 		}
 
 		template<typename T>
@@ -142,6 +150,51 @@ namespace ks {
 			case 1: pDest[ i++ ] = pFillValue;
 				}
 			}
+		}
+
+		template<typename T, class TAllocator>
+		void copy_construct( if_copyable_t<T> * pDest, const size_t pSize, TAllocator& pAllocator, const T& pFillValue )
+		{
+			duff_fill(pDest, pFillValue, pSize);
+		}
+
+		template<typename T, class TAllocator>
+		void copy_construct( if_non_copyable_t<T> * pDest, const size_t pSize, TAllocator& pAllocator, const T& pFillValue )
+		{
+			size_t i = 0;
+			switch ((pSize - i) & 7)
+			{
+			case 0:
+				while (i != pSize)
+				{
+					pAllocator.construct( pDest + i, pFillValue ); ++i;
+			case 7: pAllocator.construct( pDest + i, pFillValue ); ++i;
+			case 6: pAllocator.construct( pDest + i, pFillValue ); ++i;
+			case 5: pAllocator.construct( pDest + i, pFillValue ); ++i;
+			case 4: pAllocator.construct( pDest + i, pFillValue ); ++i;
+			case 3: pAllocator.construct( pDest + i, pFillValue ); ++i;
+			case 2: pAllocator.construct( pDest + i, pFillValue ); ++i;
+			case 1: pAllocator.construct( pDest + i, pFillValue ); ++i;
+				}
+			}
+		}
+		
+		template<typename T, class TAllocator>
+		void destroy( if_copyable_t<T> * pBegin, const size_t pCapacity, TAllocator& pAllocator)
+		{}
+
+		template<typename T, class TAllocator>
+		void destroy( if_non_copyable_t<T> * pBegin, const size_t pCapacity, TAllocator& pAllocator)
+		{
+			for ( size_t i = 0; i < pCapacity; ++i )
+				pAllocator.destroy( pBegin + i );
+		}
+
+
+		template<typename T, class TAllocator>
+		void deallocate( T *& pBegin, const size_t pCapacity, TAllocator& pAllocator)
+		{
+			pAllocator.deallocate(pBegin, pCapacity);
 		}
 	}
 
@@ -279,7 +332,7 @@ namespace ks {
 
 		pointer	mCaret;
 #if _DEBUG
-		size_type getAxis() const									{ return size_type(mBegin); }
+		size_t getAxis() const										{ return size_t(mBegin); }
 		pointer	mBegin;
 #endif
 		pointer	mEnd;
@@ -303,7 +356,7 @@ namespace ks {
 		{}
 
 		pointer operator->()											{ return this->mCaret; }
-		reference operator*()											{ return *(this->mCaret); }
+		reference operator*()											{ return this->at(0); }
 		reference operator[](size_type i)								{ return this->at(i); }
 
 		// OVERIDES
@@ -313,11 +366,11 @@ namespace ks {
 		ForwardIterator& operator--()									{ this->jump(-1); return *this; }
 		ForwardIterator operator--(int)									{ ForwardIterator prev( *this ); this->jump(-1); return prev; }
 
-		ForwardIterator& operator+=(const int pCount)					{ this->jump(pCount); return *this; }
-		ForwardIterator& operator-=(const int pCount)					{ this->jump(-pCount); return *this; }
+		ForwardIterator& operator+=(const size_type pCount)				{ this->jump((int)pCount); return *this; }
+		ForwardIterator& operator-=(const size_type pCount)				{ this->jump(-(int)pCount); return *this; }
 
-		ForwardIterator operator+(const int pCount) const				{ ForwardIterator temp(*this); temp.jump(pCount); return temp; }
-		ForwardIterator operator-(const int pCount) const				{ ForwardIterator temp(*this); temp.jump(-pCount); return temp; }
+		ForwardIterator operator+(const size_type pCount) const			{ ForwardIterator temp(*this); temp.jump((int)pCount); return temp; }
+		ForwardIterator operator-(const size_type pCount) const			{ ForwardIterator temp(*this); temp.jump(-(int)pCount); return temp; }
 
 
 		difference_type operator-(const ForwardIterator& pRHS) const	{ return this->minus(pRHS); }
@@ -344,7 +397,7 @@ namespace ks {
 		ConstForwardIterator( const ForwardIterator<T>& pOther )			{ this->copy(pOther); }
 
 		const_pointer operator->() const									{ return this->mCaret; }
-		const_reference operator*() const									{ return *(this->mCaret); }
+		const_reference operator*() const									{ return this->at(0); }
 		const_reference operator[](size_type i) const						{ return this->at(i); }
 		
 		// OVERIDES
@@ -356,11 +409,11 @@ namespace ks {
 		ConstForwardIterator& operator--()									{ this->jump(-1); return *this; }
 		ConstForwardIterator operator--(int)								{ ConstForwardIterator prev( *this ); this->jump(-1); return prev; }
 
-		ConstForwardIterator& operator+=(const int pCount)					{ this->jump(pCount); return *this; }
-		ConstForwardIterator& operator-=(const int pCount)					{ this->jump(-pCount); return *this; }
+		ConstForwardIterator& operator+=(const size_type pCount)			{ this->jump((int)pCount); return *this; }
+		ConstForwardIterator& operator-=(const size_type pCount)			{ this->jump(-(int)pCount); return *this; }
 
-		ConstForwardIterator operator+(const int pCount) const				{ ConstForwardIterator temp(*this); temp.jump(pCount); return temp; }
-		ConstForwardIterator operator-(const int pCount) const				{ ConstForwardIterator temp(*this); temp.jump(-pCount); return temp; }
+		ConstForwardIterator operator+(const size_type pCount) const		{ ConstForwardIterator temp(*this); temp.jump((int)pCount); return temp; }
+		ConstForwardIterator operator-(const size_type pCount) const		{ ConstForwardIterator temp(*this); temp.jump(-(int)pCount); return temp; }
 
 		difference_type operator-(const ConstForwardIterator& pRHS) const	{ return this->minus(pRHS); }
 		bool operator<(const ConstForwardIterator& pRHS) const				{ return this->lessthan(pRHS); }
@@ -373,10 +426,10 @@ namespace ks {
 	{
 #define KS_ARRAY_MOVE_SEMANTICS_ONLY	1		// Before turning this off, have you considered using std::vector? :P
 
-#define KS_USE_FORWARD_ITERATOR_CLASS	_DEBUG
 
 #if _DEBUG
-#define CHECK_OUT_OF_BOUNDS( x )	if( (x) >= _size ) { KS_ASSERT( 0 && "Array out of bounds detected" ); }
+#define KS_USE_FORWARD_ITERATOR_CLASS	1
+#define CHECK_OUT_OF_BOUNDS( x )		if( (x) >= _size ) { KS_ASSERT( 0 && "Array out of bounds detected" ); }
 #else
 #define CHECK_OUT_OF_BOUNDS( x )
 #endif
@@ -387,8 +440,8 @@ namespace ks {
 		typedef ConstForwardIterator<T>				const_iterator;
 
 #else
-		typedef typename T*							iterator;
-		typedef typename const T*					const_iterator;
+		typedef T*									iterator;
+		typedef const T*							const_iterator;
 
 #endif
 		typedef T									value_type;
@@ -396,7 +449,7 @@ namespace ks {
 		typedef const T*							const_pointer;
 		typedef T&									reference;
 		typedef const T&							const_reference;
-		typedef unsigned int						size_type;
+		typedef size_t								size_type;
 		typedef ptrdiff_t							difference_type;
 
 		typedef ReverseIterator<T>					reverse_iterator;
@@ -433,6 +486,7 @@ namespace ks {
 		void pop_back()					{ CHECK_OUT_OF_BOUNDS(_size - 1); --_size; }
 
 		void clear()					{ resize(0);}
+		void shrink_to_fit()			{ set_capacity(_size); }
 		void trim()						{ set_capacity(_size); }
 		void trim(size_type toSize)		{ set_capacity(toSize); }
 
@@ -455,16 +509,24 @@ namespace ks {
 		{
 			if (new_size > _capacity)
 				grow(new_size);
+
+			if( new_size > _size)
+				details::construct<value_type>( _begin + _size, new_size - _size, static_cast<TAllocator&>(*this) );
+			else if( _size > new_size )
+				details::destroy<value_type>(_begin + new_size, _size - new_size, static_cast<TAllocator&>(*this) );
+
 			_size = new_size;
 		}
 
 		void resize(size_type new_size, const_reference pFillValue )
 		{
-			const size_type prev_size = _size;
-			resize( new_size );
+			if (new_size > _capacity)
+				grow(new_size);
 
-			if( _size > prev_size )
-				details::duff_fill(_begin + prev_size, pFillValue, _size - prev_size );
+			if( new_size > _size)
+				details::copy_construct( _begin + _size, new_size - _size, static_cast<TAllocator&>(*this), pFillValue );
+
+			_size = new_size;
 		}
 
 		void reserve(size_type new_capacity)
@@ -475,9 +537,11 @@ namespace ks {
 
 		void push_back(const_reference item)
 		{
-			if (_size + 1 > _capacity)
+			if ( _size + 1 > _capacity)
 				grow();
-			_begin[_size++] = item;
+
+			details::copy_construct<value_type>( _begin + _size, 1, static_cast<TAllocator&>(*this), item );
+			++_size;
 		}
 
 		void push_back(value_type&& item)			{ emplace_back(std::move(item)); }
@@ -486,7 +550,9 @@ namespace ks {
 		{
 			if (_size + 1 > _capacity)
 				grow();
-			_begin[_size++] = std::move(item);
+
+			details::construct<value_type>( _begin + _size, static_cast<TAllocator&>(*this), std::move(item) );
+			++_size;
 		}
 
 		iterator erase( iterator item )
@@ -514,7 +580,7 @@ namespace ks {
 			const size_type diff = pPos - begin();
 			resize( _size + 1 );
 			CHECK_OUT_OF_BOUNDS( diff );
-			
+
 			pPos = begin() + diff;
 
 			for ( auto i = end() - 1; i > pPos; --i )
@@ -560,7 +626,8 @@ namespace ks {
 
 		~Array()
 		{
-			details::deallocate<value_type>(_begin, _capacity, static_cast<TAllocator>(*this));
+			details::destroy<value_type>(_begin, _size, static_cast<TAllocator&>(*this));
+			details::deallocate(_begin, _capacity, static_cast<TAllocator&>(*this));
 		}
 
 		Array(Array &&other)
@@ -577,7 +644,8 @@ namespace ks {
 		{
 			if ( this != &other )
 			{
-				details::deallocate<value_type>(_begin, _capacity, static_cast<TAllocator>(*this));
+				details::destroy<value_type>(_begin, _size, static_cast<TAllocator&>(*this));
+				details::deallocate(_begin, _capacity, static_cast<TAllocator&>(*this));
 
 				_begin		= other._begin;
 				_size		= other._size;
@@ -629,7 +697,8 @@ namespace ks {
 
 		void grow(size_type min_capacity = 0)
 		{
-			size_type new_capacity = _capacity + (_capacity >> 2) + 8;
+			size_type prev_size		= _size;
+			size_type new_capacity	= _capacity + (_capacity >> 2) + 8;
 			if (new_capacity < min_capacity)
 				new_capacity = min_capacity;
 			set_capacity(new_capacity);
@@ -643,13 +712,16 @@ namespace ks {
 			if (new_capacity < _size)
 				resize(new_capacity);
 
-			pointer new_data = 0;
+			pointer new_data	= 0;
+			auto& _allocator	= static_cast<TAllocator&>(*this);
 			if (new_capacity > 0)
 			{
-				details::allocate<value_type>( new_data, new_capacity, static_cast<TAllocator>(*this) );
+				details::allocate<value_type>( new_data, new_capacity, _allocator );
+				details::construct<value_type>( new_data, _size, _allocator );
 				details::move_into( new_data, _begin, _size );
 			}
-			details::deallocate<value_type>(_begin, _capacity, static_cast<TAllocator>(*this));
+			details::destroy<value_type>(_begin, _size, static_cast<TAllocator&>(*this));
+			details::deallocate(_begin, _capacity, _allocator );
 			_begin		= new_data;
 			_capacity	= new_capacity;
 		}
