@@ -17,6 +17,8 @@
 /// WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //////////////////////////////////////////////////////////////////////////
 
+#include "atomics.h"
+
 namespace ks {
 	
 	typedef unsigned int u32;
@@ -25,9 +27,10 @@ namespace ks {
 
 	struct ReadGuard
 	{
-		ReadGuard(ReadWriteLock& pLock);
+		ReadGuard(ReadWriteLock* pLock);
 		~ReadGuard();
 		ReadGuard(ReadGuard&&);
+		bool Acquired() const;
 	private:
 		ReadGuard(const ReadGuard&);
 		ReadGuard& operator=(const ReadGuard&);
@@ -36,9 +39,10 @@ namespace ks {
 
 	struct WriteGuard
 	{
-		WriteGuard(ReadWriteLock& pLock);
+		WriteGuard(ReadWriteLock* pLock);
 		~WriteGuard();
 		WriteGuard(WriteGuard&&);
+		bool Acquired() const;
 	private:
 		WriteGuard(const WriteGuard&);
 		WriteGuard& operator=(const WriteGuard&);
@@ -49,20 +53,28 @@ namespace ks {
 
 	class ReadWriteLock
 	{
+		friend struct ReadGuard;
+		friend struct WriteGuard;
+
 	public:
 		ReadWriteLock();
 		~ReadWriteLock();
 
-		WriteGuard	Write();
-		void		Release(WriteGuard&);
-
 		ReadGuard	Read();
-		void		Release(ReadGuard&);
+		WriteGuard	Write();
+
+		ReadGuard	TryRead();
+		WriteGuard	TryWrite();
 
 	private:
-		u32		mMutualExclusivityMask;
-		bool	cond_wait();
+		void		Release(WriteGuard&);
+		void		Release(ReadGuard&);
 
+		u32			mMutualExclusivityMask;
+		char		pad0[CACHE_LINE_SIZE - sizeof(u32)];
+		ThreadID	mWritingThread;
+		char		pad1[CACHE_LINE_SIZE - sizeof(ThreadID)];
+		int			mReentrancyCount;
 	};
 
 

@@ -17,7 +17,7 @@
 //////////////////////////////////////////////////////////////////////////	
 
 #include "ReadWriteLock.h"
-#include "atomics.h"
+#include "Debug.h"
 
 namespace ks {
 
@@ -31,7 +31,7 @@ namespace ks {
 		exclusive_write
 	};
 
-	ReadGuard::ReadGuard(ReadWriteLock& pLock) : mOwner(&pLock)
+	ReadGuard::ReadGuard(ReadWriteLock* pLock) : mOwner(pLock)
 	{}
 
 	ReadGuard::~ReadGuard()
@@ -46,8 +46,10 @@ namespace ks {
 		other.mOwner	= nullptr;
 	}
 
+	bool ReadGuard::Acquired() const			{ return mOwner != nullptr;  }
 
-	WriteGuard::WriteGuard(ReadWriteLock& pLock) : mOwner(&pLock)
+
+	WriteGuard::WriteGuard(ReadWriteLock* pLock) : mOwner(pLock)
 	{}
 
 	WriteGuard::WriteGuard(WriteGuard&& other)
@@ -55,6 +57,8 @@ namespace ks {
 		mOwner = other.mOwner;
 		other.mOwner = nullptr;
 	}
+
+	bool WriteGuard::Acquired() const			{ return mOwner != nullptr; }
 
 	WriteGuard::~WriteGuard()
 	{
@@ -66,60 +70,118 @@ namespace ks {
 //////////////////////////////////////////////////////////////////////////
 // ReadWriteLock: lockless async push_back, explicit lock on write
 //////////////////////////////////////////////////////////////////////////
-	bool ReadWriteLock::cond_wait()
-	{
-		THREAD_YIELD;
-		return true;
-	}
+	static void cond_wait()			{ THREAD_YIELD;	}
 
-	ReadWriteLock::ReadWriteLock() : mMutualExclusivityMask(exclusive_none)
+	ReadWriteLock::ReadWriteLock() : mMutualExclusivityMask(exclusive_none), mWritingThread(0), mReentrancyCount(0)
 	{}
 
 	ReadWriteLock::~ReadWriteLock()
-	{}
-
-	WriteGuard ReadWriteLock::Write()
 	{
-		const u32 lock_key(EXCL_ENCODE(exclusive_write, 0));
-		while (atomic_compare_and_swap(&mMutualExclusivityMask, exclusive_none, lock_key) != exclusive_none)
-		{
-			cond_wait();
-		}
-		return WriteGuard(*this);
-	}
-
-	void ReadWriteLock::Release(WriteGuard&)
-	{
-		const u32 lock_key(EXCL_ENCODE(exclusive_write, 0));
-		if (atomic_compare_and_swap(&mMutualExclusivityMask, lock_key, exclusive_none) != lock_key)
-		{
-			//throw ReadWriteLockException::eAlreadyUnlocked;
-		}
+		KS_ASSERT( mMutualExclusivityMask == 0 );
 	}
 
 	ReadGuard ReadWriteLock::Read()
 	{
-		u32 insert_key(0), current_key(0);
+		const u32 lock_key(EXCL_ENCODE(exclusive_write, 0));
 		// No need to encode since we know the insert counter exclusively owns the lower 28 bits of mMutualExclusivityMask.
 		// mask off the mutualexclusitivity to get the insert count. should aquire (or keep) insert exclusivity by inrementing insert count. 
-		do
+
+		const ThreadID threadID = GetCurrentThreadId();
+		u32 current_key	= (mMutualExclusivityMask & READ_COUNT_MASK);
+		u32 insert_key	= current_key + 1;
+
+		while (atomic_compare_and_swap(&mMutualExclusivityMask, current_key, insert_key) != current_key)
 		{
+			if (threadID == mWritingThread && mMutualExclusivityMask == lock_key)
+			{
+				atomic_increment((u32*)&mReentrancyCount);
+				break;
+			}
+
+			cond_wait();
 			current_key = (mMutualExclusivityMask & READ_COUNT_MASK);
 			insert_key = current_key + 1;
-		} while (atomic_compare_and_swap(&mMutualExclusivityMask, current_key, insert_key) != current_key && cond_wait());
-		
-		return ReadGuard(*this);
+		}
+
+		return ReadGuard(this);
+	}
+
+
+	ReadGuard ReadWriteLock::TryRead()
+	{
+		u32 current_key = (mMutualExclusivityMask & READ_COUNT_MASK);
+		u32 insert_key = current_key + 1;
+
+		const bool success = (atomic_compare_and_swap(&mMutualExclusivityMask, current_key, insert_key) == current_key);
+
+		return success ? ReadGuard(this) : ReadGuard(nullptr);
+	}
+
+	WriteGuard ReadWriteLock::Write()
+	{
+		const ThreadID threadID = GetCurrentThreadId();
+		const u32 lock_key(EXCL_ENCODE(exclusive_write, 0));
+		while (atomic_compare_and_swap(&mMutualExclusivityMask, exclusive_none, lock_key) != exclusive_none)
+		{
+			if (threadID == mWritingThread)
+			{
+				atomic_increment((u32*)&mReentrancyCount);
+				break;
+			}
+			cond_wait();
+		}
+
+		KS_ASSERT(mWritingThread == 0 || mWritingThread == threadID);
+		mWritingThread = threadID;
+
+		return WriteGuard(this);
+	}
+
+	WriteGuard ReadWriteLock::TryWrite()
+	{
+		const u32 lock_key(EXCL_ENCODE(exclusive_write, 0));
+		const bool success = (atomic_compare_and_swap(&mMutualExclusivityMask, exclusive_none, lock_key) == exclusive_none);
+		if (success)
+			mWritingThread = GetCurrentThreadId();
+
+		return success ? WriteGuard(this) : WriteGuard(nullptr);
+	}
+
+	void ReadWriteLock::Release(WriteGuard&)
+	{
+		KS_ASSERT(mWritingThread == GetCurrentThreadId() && mReentrancyCount >= 0);
+		int reentrants = mReentrancyCount > 0 ? atomic_decrement((u32*)&mReentrancyCount) + 1 : 0;
+		if (reentrants == 0)
+		{
+			mWritingThread = 0;
+			const u32 lock_key(EXCL_ENCODE(exclusive_write, 0));
+			if (atomic_compare_and_swap(&mMutualExclusivityMask, lock_key, exclusive_none) != lock_key)
+			{
+				KS_ASSERT( ! "ReadWriteLockException::eAlreadyUnlocked" );
+			}
+		}
 	}
 
 	void ReadWriteLock::Release(ReadGuard&)
 	{
-		u32 exit_key(0), current_key(0);
-		do
+		const u32 lock_key = EXCL_ENCODE(exclusive_write, 0);
+		u32 mutual_mask = mMutualExclusivityMask;
+		u32 current_key = mutual_mask & READ_COUNT_MASK;
+		u32 exit_key = current_key - 1;
+		while (atomic_compare_and_swap(&mMutualExclusivityMask, current_key, exit_key) != current_key )
 		{
-			current_key = (mMutualExclusivityMask & READ_COUNT_MASK);
-			exit_key = current_key - 1;
-		} while (atomic_compare_and_swap(&mMutualExclusivityMask, current_key, exit_key) != current_key && cond_wait());
+			if (mutual_mask == lock_key && mWritingThread == GetCurrentThreadId())	// it's a re-entrant read
+			{
+				int rentrants = atomic_decrement((u32*)&mReentrancyCount);
+				KS_ASSERT(rentrants >= 0);
+				break;
+			}
 
+			cond_wait();
+			mutual_mask = mMutualExclusivityMask;
+			current_key = mutual_mask & READ_COUNT_MASK;
+			exit_key = current_key - 1;
+		}
 	}
 
 
