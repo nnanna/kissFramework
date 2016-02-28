@@ -69,7 +69,7 @@ namespace ks
 
 
 
-	static std::map<ks_thread_id, void*>		sMappedMem;
+	static std::map<ThreadID, void*>		sMappedMem;
 	static std::mutex							sMapMtx;	// essential rare lock on map access
 
 	ks_thread_local handle	tlsMemHandle	= {};
@@ -88,7 +88,7 @@ namespace ks
 			tlsMemHandle.size	= size;
 
 			sMapMtx.lock();
-			sMappedMem[ ks_current_thread_id() ] = tlsMemHandle.mem;
+			sMappedMem[ GetCurrentThreadId() ] = tlsMemHandle.mem;
 			sMapMtx.unlock();
 		}
 

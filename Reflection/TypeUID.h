@@ -82,8 +82,8 @@ inline const char* ks::TypeUID<TType>::Typename()	\
 	class InstanceUIDGenerator
 	{
 	public:
-		static u32 Get()			{ return mGenerator.Get(); }
-		static u32 GetAsync()		{ return mGenerator.GetAsync(); }
+		static u32 Get(const u32 mask = 0)			{ return mGenerator.Get(mask); }
+		static u32 GetAsync(const u32 mask = 0)		{ return mGenerator.GetAsync(mask); }
 
 	protected:
 		static UIDGenerator	mGenerator;

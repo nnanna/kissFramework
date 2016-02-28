@@ -1,10 +1,9 @@
-/////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
 ///
 /// Copyright (c)
-///	@author		Nnanna Kama (2014)
-///	@about		Templated auto-generation of typeid and specialisable typenames
-///	@references	article "Making your own type id is fun" by Alex Darby
-///
+///	@author		Nnanna Kama
+///	@date		14/02/2016
+/// @brief:		template implementations for .cpp files only, to cut down compile overhead
 ///
 /// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
 /// to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
@@ -15,42 +14,28 @@
 /// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 /// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 /// WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////	
 
+#include <Concurrency\JobScheduler.h>
 
-#include "TypeUID.h"
-#include <Debug.h>
-#include <Concurrency/atomics.h>
+namespace ks {
 
-namespace ks	{
-
-	const u32 UIDGenerator::INVALID_UID = 0;
-	const u32 DEFAULT_UID				= UIDGenerator::INVALID_UID + 1;
-
-	UIDGenerator::UIDGenerator() : mMarker(DEFAULT_UID)
-	{}
-
-	u32 UIDGenerator::Get(const u32 mask)
+	template<typename _FN>
+	JobHandle JobScheduler::QueueJob( _FN&& pFunctor, const char* pName )
 	{
-		if (mMarker == (INVALID_UID | mask)) mMarker = DEFAULT_UID;		// could get triggered on wrap-around
-		u32 result = mMarker++;
+		Job* handle = SingleProducerMode() ? mJobQueue->enqueue_singlethreaded(Job(ks::move(pFunctor), pName))
+											: mJobQueue->enqueue(Job(ks::move(pFunctor), pName));
 
-		return result;
-	}
-
-	u32 UIDGenerator::GetAsync(const u32 mask)
-	{
-		u32 result(INVALID_UID), marker(0);
-		do
-		{
-			marker = mMarker;
-			result = (marker == (INVALID_UID | mask)) ? DEFAULT_UID : marker;
-		} while (atomic_compare_and_swap(&mMarker, result, result + 1) != result);
-		
-		KS_ASSERT(result != INVALID_UID);
-
-		return result;
+		return JobHandle(handle);
 	}
 
 
+	template<typename _FN, typename _CT>
+	JobHandle JobScheduler::QueueJob(_FN&& pFunctor, _CT&& pOnCompletion, const char* pName)
+	{
+		Job* handle = SingleProducerMode() ? mJobQueue->enqueue_singlethreaded(Job(ks::move(pFunctor), ks::move(pOnCompletion), pName))
+			: mJobQueue->enqueue(Job(ks::move(pFunctor), ks::move(pOnCompletion), pName));
+
+		return JobHandle(handle);
+	}
 }

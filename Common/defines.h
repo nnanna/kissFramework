@@ -4,10 +4,6 @@
 
 #define NAME_MAX		64
 
-#ifndef CACHE_LINE_SIZE
-#define CACHE_LINE_SIZE 64
-#endif
-
 #define ks_max(a, b)	(a) > (b) ? (a) : (b)
 #define ks_min(a, b)	(a) < (b) ? (a) : (b)
 
@@ -19,8 +15,8 @@
 #endif // _MSC_VER
 
 
-typedef size_t			ksType;
 typedef unsigned int	ksU32;
+typedef ksU32			ksType;
 typedef ksU32			u32;
 typedef int				ks32;
 typedef float			f32;
@@ -29,7 +25,7 @@ typedef const f32		constf32;
 #if _DEBUG
 	#define if_ks_dbg	if
 #else
-	#define if_ks_dbg()
+	#define if_ks_dbg(x)
 #endif
 
 namespace ks {

@@ -1,9 +1,9 @@
-/////////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////////
 ///
 /// Copyright (c)
-///	@author		Nnanna Kama (2014)
-///	@about		Templated auto-generation of typeid and specialisable typenames
-///	@references	article "Making your own type id is fun" by Alex Darby
+///	@author		Nnanna Kama
+///	@date		14/02/2016
 ///
 ///
 /// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
@@ -18,39 +18,49 @@
 //////////////////////////////////////////////////////////////////////////
 
 
-#include "TypeUID.h"
-#include <Debug.h>
-#include <Concurrency/atomics.h>
+#ifndef KS_JOB_SCHEDULER
+#define KS_JOB_SCHEDULER
 
-namespace ks	{
+#include <Concurrency\Job.h>
+#include <Containers\Array.h>
 
-	const u32 UIDGenerator::INVALID_UID = 0;
-	const u32 DEFAULT_UID				= UIDGenerator::INVALID_UID + 1;
+namespace ks {
 
-	UIDGenerator::UIDGenerator() : mMarker(DEFAULT_UID)
-	{}
 
-	u32 UIDGenerator::Get(const u32 mask)
+	////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// FORWARD DECLS
+	template<typename T>
+	class CyclicConcurrentQueue;
+
+	struct JSThread;
+	//
+	////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	class JobScheduler
 	{
-		if (mMarker == (INVALID_UID | mask)) mMarker = DEFAULT_UID;		// could get triggered on wrap-around
-		u32 result = mMarker++;
+	public:
+		JobScheduler( ksU32 pNumThreads = 4, ksU32 pMaxNumJobs = 31, bool pSingleProducer = false );
+		~JobScheduler();
 
-		return result;
-	}
+		template<typename _FN>
+		JobHandle QueueJob(_FN&& pFunctor, const char* pName);
 
-	u32 UIDGenerator::GetAsync(const u32 mask)
-	{
-		u32 result(INVALID_UID), marker(0);
-		do
-		{
-			marker = mMarker;
-			result = (marker == (INVALID_UID | mask)) ? DEFAULT_UID : marker;
-		} while (atomic_compare_and_swap(&mMarker, result, result + 1) != result);
-		
-		KS_ASSERT(result != INVALID_UID);
+		template<typename _FN, typename _CT>
+		JobHandle QueueJob(_FN&& pFunctor, _CT&& pOnCompletion, const char* pName);
 
-		return result;
-	}
+		JobHandle QueueJob(Job&& pJob);
 
+		bool Running() const;
 
+		bool SingleProducerMode() const;
+
+	private:
+		CyclicConcurrentQueue<Job>*	mJobQueue;
+		Array<JSThread*>			mWorkerThreads;
+		ksU32						mFlags;
+
+	};
 }
+
+
+#endif

@@ -525,6 +525,8 @@ namespace ks {
 
 			if( new_size > _size)
 				details::copy_construct( _begin + _size, new_size - _size, static_cast<TAllocator&>(*this), pFillValue );
+			else if( _size > new_size )
+				details::destroy<value_type>( _begin + new_size, _size - new_size, static_cast<TAllocator&>(*this) );
 
 			_size = new_size;
 		}
@@ -540,7 +542,7 @@ namespace ks {
 			if ( _size + 1 > _capacity)
 				grow();
 
-			details::copy_construct<value_type>( _begin + _size, 1, static_cast<TAllocator&>(*this), item );
+			details::copy_construct( _begin + _size, 1, static_cast<TAllocator&>(*this), item );
 			++_size;
 		}
 

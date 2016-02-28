@@ -28,6 +28,11 @@ SOFTWARE.
 #define ATOMICS_H_
 
 
+#ifndef CACHE_LINE_SIZE
+#define CACHE_LINE_SIZE 64
+#endif
+
+
 #if _MSC_VER
 
 #include "Windows.h"
@@ -35,37 +40,44 @@ SOFTWARE.
 	#define atomic_compare_and_swap(ptr, oldval, newval)			InterlockedCompareExchange(ptr, newval, oldval)
 	#define atomic_compare_and_swap_pointer(ptr, oldval, newval)	InterlockedCompareExchangePointer(ptr, newval, oldval)
 	#define atomic_exchange_pointer(ptr, newval)					InterlockedExchangePointer(ptr, newval)
-	#define atomic_or_into(ptr, val)								InterlockedOr( (volatile long*)ptr, val )
 	#define atomic_increment										InterlockedIncrement
 	#define atomic_decrement										InterlockedDecrement
+	#define atomic_or_into(ptr, val)								InterlockedOr( (volatile long*)ptr, val )
 
-	#define WRITE_BARRIER				_WriteBarrier(); MemoryBarrier()
-	#define READ_BARRIER				_ReadBarrier(); MemoryBarrier()
-	#define THREAD_YIELD				YieldProcessor()
-	#define THREAD_SWITCH				SwitchToThread()
-	#define THREAD_SLEEP				Sleep
-
-	#define ks_current_thread_id		GetCurrentThreadId
-	#define ks_thread_id				DWORD
+	#define WRITE_BARRIER											_WriteBarrier(); MemoryBarrier()
+	#define READ_BARRIER											_ReadBarrier(); MemoryBarrier()
+	#define THREAD_YIELD											YieldProcessor()
+	#define THREAD_SWITCH											SwitchToThread()
+	#define THREAD_SLEEP											Sleep
+namespace ks
+{
+	typedef DWORD													ThreadID;
+}
 
 #else	// __GNUC__
 
 #include "sched.h"
+// http://locklessinc.com/articles/locks/
 
-	#define atomic_compare_and_swap			__sync_val_compare_and_swap
-	#define atomic_compare_and_swap_pointer		__sync_val_compare_and_swap
-	#define atomic_exchange_pointer(ptr, newval)					InterlockedExchangePointer(ptr, newval)
-	#define atomic_increment(x)			__sync_add_and_fetch( x, 1 )
-	#define atomic_decrement(x)			__sync_sub_and_fetch( x, 1 )
+	#define atomic_compare_and_swap					__sync_val_compare_and_swap
+	#define atomic_compare_and_swap_pointer			__sync_val_compare_and_swap
+// https://www.winehq.org/pipermail/wine-cvs/2013-April/094844.html
+	#define atomic_exchange_pointer(dest, val)		__asm__ __volatile__( "lock; xchgq %0,(%1)"
+-													: "=r" (ret) :"r" (dest), "0" (val) : "memory" );
+	#define atomic_increment(x)						__sync_add_and_fetch( x, 1 )
+	#define atomic_decrement(x)						__sync_sub_and_fetch( x, 1 )
 
-	#define WRITE_BARRIER				asm volatile("": : :"memory"); __sync_synchronize()
-	#define READ_BARRIER				asm volatile("": : :"memory"); __sync_synchronize()
-	#define THREAD_YIELD				sched_yield()
-	#define THREAD_SWITCH				asm volatile("pause\n": : :"memory")
-	#define THREAD_SLEEP				sleep
+	#define WRITE_BARRIER							asm volatile("": : :"memory"); __sync_synchronize()
+	#define READ_BARRIER							asm volatile("": : :"memory"); __sync_synchronize()
+	#define THREAD_YIELD							asm volatile("pause\n": : :"memory")
+	#define THREAD_SWITCH							sched_yield()
+	#define THREAD_SLEEP							sleep
+	#define GetCurrentThreadId						pthread_self
+namespace ks
+{
+	typedef pthread_t								ThreadID;
+}
 
-
-	#define ks_thread_id				pthread_t
 #endif
 
 

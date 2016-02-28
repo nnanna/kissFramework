@@ -21,8 +21,8 @@
 
 namespace ks {
 
-#define READ_COUNT_MASK				0x0fffffff
-#define READ_COUNT_BITSIZE			28
+#define READ_COUNT_MASK				0x7fffffff
+#define READ_COUNT_BITSIZE			31
 #define EXCL_ENCODE( e, incount )	((e) << READ_COUNT_BITSIZE) | ((incount) & READ_COUNT_MASK)
 
 	enum exclusivity

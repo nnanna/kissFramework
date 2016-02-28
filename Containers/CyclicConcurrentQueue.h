@@ -101,13 +101,13 @@ namespace ks
 			delete[] mItems;
 		}
 
-		void enqueue(T&& pItem)	{ mIsPowerOfTwo ? enqueue<ccq_multi, true>(ks::move(pItem)) : enqueue<ccq_multi, false>(ks::move(pItem)); }
+		T* const enqueue(T&& pItem)	{ return mIsPowerOfTwo ? enqueue<ccq_multi, true>(ks::move(pItem)) : enqueue<ccq_multi, false>(ks::move(pItem)); }
 
-		queue_item	dequeue()	{ return mIsPowerOfTwo ? dequeue<ccq_multi, true>() : dequeue<ccq_multi, false>(); }
+		queue_item	dequeue()		{ return mIsPowerOfTwo ? dequeue<ccq_multi, true>() : dequeue<ccq_multi, false>(); }
 
-		void enqueue_singlethreaded(T&& pItem)
+		T* const enqueue_singlethreaded(T&& pItem)
 		{
-			mIsPowerOfTwo ? enqueue<ccq_single, true>(ks::move(pItem)) : enqueue<ccq_single, false>(ks::move(pItem));
+			return mIsPowerOfTwo ? enqueue<ccq_single, true>(ks::move(pItem)) : enqueue<ccq_single, false>(ks::move(pItem));
 		}
 
 		queue_item	dequeue_singlethreaded()
@@ -136,11 +136,11 @@ namespace ks
 
 	private:
 		template<bool isPowerOfTwo>
-		inline ksU32 next(ksU32 pFrom) const	{ return ks::pseudo_modulus<isPowerOfTwo>(pFrom + 1, mCapacity); }
+		inline ksU32 next(ksU32 pFrom) const	{ return pseudo_modulus<isPowerOfTwo>(pFrom + 1, mCapacity); }
 
 
 		template<CCQMode mode, bool isPowerOfTwo>
-		void enqueue(T&& pItem)
+		T* const enqueue(T&& pItem)
 		{
 			ksU32 index(0), nextTail(0);
 			bool failed(true);
@@ -148,7 +148,7 @@ namespace ks
 			{
 				index = mWriteTail;
 				nextTail = next<isPowerOfTwo>(index);
-			} while ((nextTail != mHead) && (failed = ks::fail_compare_swap<mode>(mWriteTail, index, nextTail)));
+			} while ((nextTail != mHead) && (failed = fail_compare_swap<mode>(mWriteTail, index, nextTail)));
 
 			if (!failed)
 			{
@@ -157,7 +157,7 @@ namespace ks
 
 				ksU32 timeout(0);
 				// first test (mReadTail != index) to avoid a futile compare_swap call.
-				while ((mReadTail != index) || ks::fail_compare_swap<mode>(mReadTail, index, nextTail))
+				while ((mReadTail != index) || fail_compare_swap<mode>(mReadTail, index, nextTail))
 				{
 					// http://www.codeproject.com/Articles/184046/Spin-Lock-in-C
 					if (timeout < CONTEXT_SWITCH_LATENCY)
@@ -166,10 +166,13 @@ namespace ks
 						THREAD_SWITCH;
 					++timeout;
 				}
+
+				return &mItems[index];
 			}
 			else
 			{
 				throw EnqueueException::eQueueFull;
+				return nullptr;
 			}
 		}
 
@@ -183,7 +186,7 @@ namespace ks
 				index = mHead;
 				nextHead = next<isPowerOfTwo>(index);
 				available = !empty();
-			} while (available && ks::fail_compare_swap<mode>(mHead, index, nextHead));
+			} while (available && fail_compare_swap<mode>(mHead, index, nextHead));
 
 			return queue_item(mItems[index], available);	// ideally you'd wanna grab the data before incrementing mHead, no?
 			// Generally, this is fine™ as long as the queue doesn't fill up quicker than it is consumed - which is a problem in itself - it should be adequately sized
