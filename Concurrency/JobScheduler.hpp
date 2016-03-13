@@ -26,6 +26,8 @@ namespace ks {
 		Job* handle = SingleProducerMode() ? mJobQueue->enqueue_singlethreaded(Job(ks::move(pFunctor), pName))
 											: mJobQueue->enqueue(Job(ks::move(pFunctor), pName));
 
+		Signal();
+
 		return JobHandle(handle);
 	}
 
@@ -35,6 +37,8 @@ namespace ks {
 	{
 		Job* handle = SingleProducerMode() ? mJobQueue->enqueue_singlethreaded(Job(ks::move(pFunctor), ks::move(pOnCompletion), pName))
 			: mJobQueue->enqueue(Job(ks::move(pFunctor), ks::move(pOnCompletion), pName));
+
+		Signal();
 
 		return JobHandle(handle);
 	}

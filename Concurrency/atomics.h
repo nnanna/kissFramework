@@ -43,6 +43,7 @@ SOFTWARE.
 	#define atomic_increment										InterlockedIncrement
 	#define atomic_decrement										InterlockedDecrement
 	#define atomic_or_into(ptr, val)								InterlockedOr( (volatile long*)ptr, val )
+	#define atomic_and(ptr, val)									InterlockedAnd( (volatile long*)ptr, val )
 
 	#define WRITE_BARRIER											_WriteBarrier(); MemoryBarrier()
 	#define READ_BARRIER											_ReadBarrier(); MemoryBarrier()

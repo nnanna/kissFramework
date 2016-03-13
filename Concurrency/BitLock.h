@@ -1,9 +1,9 @@
-
 //////////////////////////////////////////////////////////////////////////
 ///
 /// Copyright (c)
 ///	@author		Nnanna Kama
-///	@date		14/02/2016
+///	@date		11/03/2016
+///	@about		BitLock : Useful for concurrent access to specific indices/buckets within a large container
 ///
 ///
 /// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
@@ -17,55 +17,37 @@
 /// WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //////////////////////////////////////////////////////////////////////////
 
-
-#ifndef KS_JOB_SCHEDULER
-#define KS_JOB_SCHEDULER
-
-#include <Concurrency\Job.h>
-#include <Containers\Array.h>
+#include "atomics.h"
 
 namespace ks {
+	
+	typedef unsigned int u32;
 
-
-	////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// FORWARD DECLS
-	template<typename T>
-	class CyclicConcurrentQueue;
-
-	struct JSThread;
 	//
-	////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-	class JobScheduler
+	//
+	class BitLock
 	{
 	public:
-		JobScheduler( ksU32 pNumThreads = 4, ksU32 pMaxNumJobs = 31, bool pSingleProducer = false );
-		~JobScheduler();
+		BitLock();
+		void Lock(u32 index);
+		void Unlock(u32 index);
 
-		template<typename _FN>
-		JobHandle QueueJob(_FN&& pFunctor, const char* pName);
+		// for less bit-contention over bigger ranges. trivially extensible to higher bit ranges
+		void Lock64(u32 index);
+		void Unlock64(u32 index);
 
-		template<typename _FN, typename _CT>
-		JobHandle QueueJob(_FN&& pFunctor, _CT&& pOnCompletion, const char* pName);
-
-		JobHandle QueueJob(Job&& pJob);
-
-		bool Running() const;
-
-		bool SingleProducerMode() const;
-
-		void Signal();
-
-		void Wait();
-
+		void Lock128(u32 index);
+		void Unlock128(u32 index);
 	private:
-		CyclicConcurrentQueue<Job>*	mJobQueue;
-		Array<JSThread*>			mWorkerThreads;
-		ksU32						mFlags;
-		class Semaphore*			mSemaphore;
+#define BL_ARRAY_SIZE	4
+		template<u32 BITRANGE>
+		void lock(u32 index);
 
+		template<u32 BITRANGE>
+		void unlock(u32 index);
+
+		u32		mBits[ BL_ARRAY_SIZE ];
+		char	pad[CACHE_LINE_SIZE - (sizeof(u32) * BL_ARRAY_SIZE)];
 	};
+
 }
-
-
-#endif

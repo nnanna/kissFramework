@@ -30,6 +30,7 @@ namespace ks {
 		ReadGuard(ReadWriteLock* pLock);
 		~ReadGuard();
 		ReadGuard(ReadGuard&&);
+		void Release();
 		bool Acquired() const;
 	private:
 		ReadGuard(const ReadGuard&);
@@ -42,6 +43,7 @@ namespace ks {
 		WriteGuard(ReadWriteLock* pLock);
 		~WriteGuard();
 		WriteGuard(WriteGuard&&);
+		void Release();
 		bool Acquired() const;
 	private:
 		WriteGuard(const WriteGuard&);
@@ -76,6 +78,5 @@ namespace ks {
 		char		pad1[CACHE_LINE_SIZE - sizeof(ThreadID)];
 		int			mReentrancyCount;
 	};
-
 
 }

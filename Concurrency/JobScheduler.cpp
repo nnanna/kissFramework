@@ -18,22 +18,24 @@
 //////////////////////////////////////////////////////////////////////////
 
 #include <Concurrency\JobScheduler.h>
+#include <Concurrency\Semaphore.h>
 #include <Containers\CyclicConcurrentQueue.h>
 #include <thread>
 
 namespace ks {
+
 
 #define	JS_FLAG_RUNNING			(1<<1)
 #define	JS_FLAG_SINGLEPRODUCER	(1<<2)
 
 	struct JSThread
 	{
-		JSThread(const JobScheduler* pArg1, CyclicConcurrentQueue<Job>* pArg2) : mThread{ ThreadRoutine, pArg1, pArg2 }
+		JSThread(JobScheduler* pArg1, CyclicConcurrentQueue<Job>* pArg2) : mThread{ ThreadRoutine, pArg1, pArg2 }
 		{
 			mThread.detach();		// gotta manage its lifetime ourselves
 		}
 
-		static void ThreadRoutine(const JobScheduler* context, CyclicConcurrentQueue<Job>* queue)
+		static void ThreadRoutine(JobScheduler* context, CyclicConcurrentQueue<Job>* queue)
 		{
 			while (context->Running())
 			{
@@ -41,7 +43,9 @@ namespace ks {
 				if (*job)
 					job->Execute();
 				else
-					THREAD_SLEEP(1);	// TODO: semaphore up in this biz'niss
+				{
+					context->Wait();
+				}
 			}
 		}
 
@@ -51,7 +55,7 @@ namespace ks {
 
 
 	JobScheduler::JobScheduler(ksU32 pNumThreads, ksU32 pMaxNumJobs, bool pSingleProducer )
-		: mJobQueue(nullptr), mWorkerThreads(pNumThreads), mFlags(0)
+		: mJobQueue(nullptr), mWorkerThreads(pNumThreads), mFlags(0), mSemaphore(nullptr)
 	{
 		if (pSingleProducer)
 			mFlags |= JS_FLAG_SINGLEPRODUCER;
@@ -59,6 +63,7 @@ namespace ks {
 		mFlags |= JS_FLAG_RUNNING;
 
 		mJobQueue		= new CyclicConcurrentQueue<Job>(pMaxNumJobs);
+		mSemaphore		= new Semaphore();
 
 		for (ksU32 i = 0; i < pNumThreads; ++i)
 			mWorkerThreads.push_back(new JSThread(this, mJobQueue));
@@ -67,11 +72,13 @@ namespace ks {
 	JobScheduler::~JobScheduler()
 	{
 		mFlags = 0;
-		THREAD_SLEEP(3);				// wait for the threads routines to quit. TODO: don't judge me.
+		mSemaphore->finish();
+		THREAD_SLEEP(3);		// @TODO: don't use glut - it makes you do bad things
 
 		for (auto i : mWorkerThreads)
 			delete i;
 
+		delete mSemaphore;
 		delete mJobQueue;
 	}
 
@@ -79,10 +86,22 @@ namespace ks {
 	JobHandle JobScheduler::QueueJob(Job&& pJob)
 	{
 		Job* handle = SingleProducerMode() ? mJobQueue->enqueue_singlethreaded(ks::move(pJob)) : mJobQueue->enqueue(ks::move(pJob));
+		Signal();
 		return JobHandle(handle);
 	}
 
 	bool JobScheduler::Running() const				{ return (mFlags & JS_FLAG_RUNNING) > 0; }
 
 	bool JobScheduler::SingleProducerMode() const	{ return (mFlags & JS_FLAG_SINGLEPRODUCER) > 0; }
+
+
+	void JobScheduler::Signal()
+	{
+		mSemaphore->signal();
+	}
+
+	void JobScheduler::Wait()
+	{
+		mSemaphore->wait();
+	}
 }
