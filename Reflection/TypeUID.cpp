@@ -45,7 +45,7 @@ namespace ks	{
 		{
 			marker = mMarker;
 			result = (marker == (INVALID_UID | mask)) ? DEFAULT_UID : marker;
-		} while (atomic_compare_and_swap(&mMarker, result, result + 1) != result);
+		} while (atomic_compare_and_swap(&mMarker, marker, result + 1) != marker);
 		
 		KS_ASSERT(result != INVALID_UID);
 

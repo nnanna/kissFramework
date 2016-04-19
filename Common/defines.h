@@ -2,11 +2,14 @@
 #ifndef KS_DEFINES_H
 #define KS_DEFINES_H
 
-#define NAME_MAX		64
+#define MAX_NAME		64
 
 #define ks_max(a, b)	(a) > (b) ? (a) : (b)
 #define ks_min(a, b)	(a) < (b) ? (a) : (b)
 
+#ifndef NULL
+#define NULL 0
+#endif
 
 #if (defined _MSC_VER)
 #define ks_thread_local		__declspec( thread )
@@ -21,11 +24,16 @@ typedef ksU32			u32;
 typedef int				ks32;
 typedef float			f32;
 typedef const f32		constf32;
+typedef unsigned short	ksUShort;
+typedef short			ksShort;
+typedef char			ksByte;
 
 #if _DEBUG
 	#define if_ks_dbg	if
+	#define DEBUG_PRINT	printf
 #else
 	#define if_ks_dbg(x)
+	#define DEBUG_PRINT
 #endif
 
 namespace ks {

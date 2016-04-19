@@ -49,9 +49,9 @@ namespace ks {
 	template<typename T>
 	inline const char* TypeUID<T>::Typename()
 	{
-		static char tName[NAME_MAX] = { 0 };
+		static char tName[MAX_NAME] = { 0 };
 		if (tName[0] == 0)
-			sprintf_s(tName, NAME_MAX, "%08x", TypeID());
+			sprintf_s(tName, MAX_NAME, "%08x", TypeID());
 
 		return tName;
 	}

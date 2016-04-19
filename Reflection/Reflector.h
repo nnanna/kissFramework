@@ -21,6 +21,8 @@
 #include <type_traits>
 #include "TypeUID.h"
 
+namespace ks{
+
 class IReflector
 {
 public:
@@ -62,5 +64,6 @@ private:
 	static IReflector* getReflectInterface(const T& pRHS);
 };
 
+}	// namespace ks
 
 #endif
