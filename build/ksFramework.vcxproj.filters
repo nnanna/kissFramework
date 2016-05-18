@@ -28,9 +28,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\Scripting\ScriptUtility.cpp">
-      <Filter>Scripting</Filter>
-    </ClCompile>
     <ClCompile Include="..\Reflection\TypeUID.cpp">
       <Filter>Reflection</Filter>
     </ClCompile>
@@ -92,12 +89,6 @@
     </ClInclude>
     <ClInclude Include="..\Reflection\TypeUID.h">
       <Filter>Reflection</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Scripting\ScriptUtility.h">
-      <Filter>Scripting</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Scripting\ScriptUtility.hpp">
-      <Filter>Scripting</Filter>
     </ClInclude>
     <ClInclude Include="..\Common\defines.h">
       <Filter>Common</Filter>

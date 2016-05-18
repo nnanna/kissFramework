@@ -29,7 +29,6 @@
     <ClCompile Include="..\Maths\Matrix4x4.cpp" />
     <ClCompile Include="..\Memory\ThreadStackAllocator.cpp" />
     <ClCompile Include="..\Reflection\TypeUID.cpp" />
-    <ClCompile Include="..\Scripting\ScriptUtility.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Common\crc32.h" />
@@ -54,8 +53,6 @@
     <ClInclude Include="..\Reflection\EnumString.h" />
     <ClInclude Include="..\Reflection\Reflector.h" />
     <ClInclude Include="..\Reflection\TypeUID.h" />
-    <ClInclude Include="..\Scripting\ScriptUtility.h" />
-    <ClInclude Include="..\Scripting\ScriptUtility.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Maths\ks_Maths.inl" />
