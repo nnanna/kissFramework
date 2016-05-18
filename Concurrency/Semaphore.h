@@ -3,10 +3,6 @@
 #ifndef KS_SEMAPHORE_H
 #define KS_SEMAPHORE_H
 
-
-#include <mutex>
-#include <condition_variable>
-
 namespace ks {
 
 	class Semaphore
@@ -15,18 +11,17 @@ namespace ks {
 
 		Semaphore();
 
-		void signal();
+		~Semaphore();
+
+		void signal(int count = 1);
 
 		void wait();
 
-		void finish();
-
-		unsigned int trywait() const;
-
 	private:
-		unsigned int			mCount;
-		std::mutex				mMtx;
-		std::condition_variable cv;
+		Semaphore(const Semaphore&);
+		Semaphore& operator=(const Semaphore&);
+
+		struct SemContext*	mCtx;
 	};
 }
 

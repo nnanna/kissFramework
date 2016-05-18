@@ -24,65 +24,69 @@
 
 #include <Debug.h>
 
-template<typename ENUMTYPE>
-struct EnumString
-{
-	template<ks32 ENUMID>
-	static const char* get();
-};
+namespace ks {
+
+	template<typename ENUMTYPE>
+	struct EnumString
+	{
+		template<ks32 ENUMID>
+		static const char* get();
+	};
 
 #define EXPORTENUMSTRING(EID)							\
 	template<> template<>								\
-	const char* EnumString<decltype(EID)>::get<EID>()	\
-	{ return #EID; }									\
+	const char* ks::EnumString<decltype(EID)>::get<EID>()	\
+		{ return #EID; }									\
 
 
-template<ks32 FROM>
-struct EnumLoop
-{
-	template<typename ENUMTYPE>
-	static const char* get(ENUMTYPE pID);
-};
+	template<ks32 FROM>
+	struct EnumLoop
+	{
+		template<typename ENUMTYPE>
+		static const char* get(ENUMTYPE pID);
+	};
 
 #define BEGINENUMSTRING(ETYPE, EID)							\
 	DECLARE_TYPENAME(ETYPE)									\
 	EXPORTENUMSTRING(EID)									\
 template<> template<>										\
-inline const char* EnumLoop<EID-1>::get(decltype(EID) pID)	\
-{															\
+inline const char* ks::EnumLoop<EID-1>::get(decltype(EID) pID)	\
+	{															\
 	return "MINIMUS_EXTREMUS";								\
-}															\
+	}															\
 
 #define FINISHENUMSTRING(EID)								\
 	EXPORTENUMSTRING(EID)									\
 template<> template<>										\
-inline const char* EnumLoop<EID+1>::get(decltype(EID) pID)	\
-{															\
+inline const char* ks::EnumLoop<EID+1>::get(decltype(EID) pID)	\
+	{															\
 	return "MAXIMUS_EXTREMUS";								\
-}															\
+	}															\
 
-template<typename ENUMTYPE> template<ks32 ENUMID>
-const char* EnumString<ENUMTYPE>::get()
-{
-	KISS_ASSERT(0 && "This enum hasn't been exported/declared");
-	return "undeclared";
-}
+	template<typename ENUMTYPE> template<ks32 ENUMID>
+	const char* EnumString<ENUMTYPE>::get()
+	{
+		KISS_ASSERT(0 && "This enum hasn't been exported/declared");
+		return "undeclared";
+	}
 
-template<ks32 FROM> template<typename ENUMTYPE>
-inline const char* EnumLoop<FROM>::get(ENUMTYPE pID)
-{
-	if (pID == FROM)
-		return EnumString<ENUMTYPE>::get<FROM>();
-	else if (pID < FROM)
-		return EnumLoop<FROM - 1>::get(pID);
-	else
-		return EnumLoop<FROM + 1>::get(pID);
-}
+	template<ks32 FROM> template<typename ENUMTYPE>
+	inline const char* EnumLoop<FROM>::get(ENUMTYPE pID)
+	{
+		if (pID == FROM)
+			return EnumString<ENUMTYPE>::get<FROM>();
+		else if (pID < FROM)
+			return EnumLoop<FROM - 1>::get(pID);
+		else
+			return EnumLoop<FROM + 1>::get(pID);
+	}
 
-template<typename ETYPE>
-inline const char* enumToString(ETYPE pID)			// recurse to the right templated version.
-{
-	return EnumLoop<0>::get<ETYPE>(pID);
-}
+	template<typename ETYPE>
+	inline const char* enumToString(ETYPE pID)			// recurse to the right templated version.
+	{
+		return EnumLoop<0>::get<ETYPE>(pID);
+	}
+
+}	// namespace ks
 
 #endif	//ENUMSTRING_H

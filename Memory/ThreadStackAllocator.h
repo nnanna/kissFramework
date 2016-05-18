@@ -34,12 +34,28 @@ namespace mem {
 		ThreadStackAllocator(u32 pCapacity);
 		~ThreadStackAllocator();
 
-		void* alloc(u32 size);
+		void* allocate();
+		void* allocate(u32 size);
 
 	private:
 		void*		mMem;
 		u32			mIndex;
 		const u32	mCapacity;
+	};
+
+
+	struct StackBuffer
+	{
+		StackBuffer(void* pMem, u32 pCapacity);
+		~StackBuffer();
+
+		void* allocate();
+		void* allocate(u32 size);
+
+	private:
+		void*	mMem;
+		u32		mIndex;
+		u32		mCapacity;
 	};
 
 } //namespace mem

@@ -1,0 +1,144 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Common">
+      <UniqueIdentifier>{d21c4766-5b29-46c7-9eb3-533cac111951}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Concurrency">
+      <UniqueIdentifier>{f7952cfb-bf66-45cf-8cf0-b4cfc47d9c4f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Memory">
+      <UniqueIdentifier>{988aeae9-e5b3-4438-b362-51930ebdcb5d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Containers">
+      <UniqueIdentifier>{fc28f4c2-043f-4672-a7ef-b38cdb3abf9c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Maths">
+      <UniqueIdentifier>{504d396a-44ae-4c92-9509-90b51c339db1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Reflection">
+      <UniqueIdentifier>{78b86930-8ab4-424c-b300-ba574a3c7ca5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Scripting">
+      <UniqueIdentifier>{65d8ad8b-5e57-48e6-aee9-2584c0a22d18}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\Scripting\ScriptUtility.cpp">
+      <Filter>Scripting</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Reflection\TypeUID.cpp">
+      <Filter>Reflection</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Memory\ThreadStackAllocator.cpp">
+      <Filter>Memory</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Concurrency\ReadWriteLock.cpp">
+      <Filter>Concurrency</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Concurrency\JobScheduler.cpp">
+      <Filter>Concurrency</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Concurrency\BitLock.cpp">
+      <Filter>Concurrency</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Concurrency\Semaphore.cpp">
+      <Filter>Concurrency</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Common\crc32.cpp">
+      <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Common\ErrorNotify.cpp">
+      <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Maths\ks_Maths.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Maths\Matrix4x4.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\Common\Debug.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Concurrency\atomics.h">
+      <Filter>Concurrency</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Memory\DataPointer.h">
+      <Filter>Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Containers\Array.h">
+      <Filter>Containers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Containers\CyclicArray.h">
+      <Filter>Containers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Maths\ks_Maths.h">
+      <Filter>Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Reflection\EnumReflector.h">
+      <Filter>Reflection</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Reflection\EnumString.h">
+      <Filter>Reflection</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Reflection\Reflector.h">
+      <Filter>Reflection</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Reflection\TypeUID.h">
+      <Filter>Reflection</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Scripting\ScriptUtility.h">
+      <Filter>Scripting</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Scripting\ScriptUtility.hpp">
+      <Filter>Scripting</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Common\defines.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Memory\DataPointer.hpp">
+      <Filter>Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Memory\ThreadStackAllocator.h">
+      <Filter>Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Concurrency\ReadWriteLock.h">
+      <Filter>Concurrency</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Concurrency\JobScheduler.h">
+      <Filter>Concurrency</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Concurrency\Job.h">
+      <Filter>Concurrency</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Concurrency\JobDecoder.h">
+      <Filter>Concurrency</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Concurrency\JobScheduler.hpp">
+      <Filter>Concurrency</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Concurrency\BitLock.h">
+      <Filter>Concurrency</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Concurrency\Semaphore.h">
+      <Filter>Concurrency</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Common\crc32.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Common\ErrorNotify.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\Maths\ks_Maths.inl">
+      <Filter>Maths</Filter>
+    </None>
+  </ItemGroup>
+</Project>
