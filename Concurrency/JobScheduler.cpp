@@ -72,7 +72,9 @@ namespace ks {
 	JobScheduler::~JobScheduler()
 	{
 		mFlags = 0;
-		mSemaphore->finish();
+		for (u32 n = 0; n < mWorkerThreads.size(); ++n)
+			Signal();
+
 		THREAD_SLEEP(3);		// @TODO: don't use glut - it makes you do bad things
 
 		for (auto i : mWorkerThreads)
