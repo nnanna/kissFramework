@@ -23,57 +23,51 @@ namespace ks {
 
 	Semaphore::Semaphore()
 	{
-		mCtx = new SemContext();
+		mCtx = (size_t)new SemContext();
 	}
 
 	Semaphore::~Semaphore()
-	{}
+	{
+		delete (SemContext*)mCtx;
+	}
 
 	void Semaphore::signal(int count /*= 1*/)
 	{
-		std::unique_lock<std::mutex> lock(mCtx->mtx);
-		++mCtx->mCount;
+		SemContext* ctx = (SemContext*)mCtx;
+		std::unique_lock<std::mutex> lock(ctx->mtx);
+		++ctx->mCount;
 		lock.unlock();
-		mCtx->cv.notify_one();	// TODO: notify count
+		ctx->cv.notify_one();	// TODO: notify count
 	}
 
 	void Semaphore::wait()
 	{
-		std::unique_lock<std::mutex> lock(mCtx->mtx);
-		mCtx->cv.wait(lock, [this]() { return mCtx->mCount != 0; });
-		--mCtx->mCount;
+		SemContext* ctx = (SemContext*)mCtx;
+		std::unique_lock<std::mutex> lock(ctx->mtx);
+		ctx->cv.wait(lock, [ctx]() { return ctx->mCount != 0; });
+		--ctx->mCount;
 	}
 
 #else
 
-	struct SemContext
-	{
-		SemContext()
-		{
-			mSemaphore = CreateSemaphore(NULL, 0, 0x0fffffff, NULL);
-		}
-		HANDLE	mSemaphore;
-	};
-
-
 	Semaphore::Semaphore()
 	{
-		mCtx = new SemContext();
+		mCtx = (size_t)CreateSemaphore(NULL, 0, 0x0fffffff, NULL);
 	}
 
 	Semaphore::~Semaphore()
 	{
-		CloseHandle(mCtx->mSemaphore);
+		CloseHandle((HANDLE)mCtx);
 	}
 
 	void Semaphore::signal(int count /*= 1*/)
 	{
-		ReleaseSemaphore(mCtx->mSemaphore, count, 0);
+		ReleaseSemaphore((HANDLE)mCtx, count, 0);
 	}
 
 	void Semaphore::wait()
 	{
-		WaitForSingleObject(mCtx->mSemaphore, INFINITE);
+		WaitForSingleObject((HANDLE)mCtx, INFINITE);
 	}
 
 #endif

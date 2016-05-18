@@ -21,7 +21,7 @@ namespace ks {
 		Semaphore(const Semaphore&);
 		Semaphore& operator=(const Semaphore&);
 
-		struct SemContext*	mCtx;
+		size_t	mCtx;
 	};
 }
 
