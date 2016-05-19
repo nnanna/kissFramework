@@ -9,15 +9,13 @@
 
 #pragma once
 
-
 #include <defines.h>
-
 
 
 namespace ks
 {
 	class Matrix;
-	struct	Material;
+	struct Material;
 
 	/*
 	Duplicates OpenGL rendermode info for easier interop

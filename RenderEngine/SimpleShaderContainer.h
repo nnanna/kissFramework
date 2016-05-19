@@ -14,8 +14,8 @@
 #ifndef SIMPLESHADERCONTAINER_H
 #define SIMPLESHADERCONTAINER_H
 
+#include <defines.h>
 #include <unordered_map>
-#include <Maths\ks_Maths.h>
 #include "crc32.h"
 
 #if TARGET_CG_SHADERS

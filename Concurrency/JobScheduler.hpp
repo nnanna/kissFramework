@@ -17,6 +17,7 @@
 //////////////////////////////////////////////////////////////////////////	
 
 #include <Concurrency\JobScheduler.h>
+#include <Containers\CyclicConcurrentQueue.h>
 
 namespace ks {
 

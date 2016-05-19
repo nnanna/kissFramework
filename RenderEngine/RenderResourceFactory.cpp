@@ -7,7 +7,6 @@
 namespace ks {
 
 	ShaderLibraryMap	RenderResourceFactory::sShaderLibrary;
-	MaterialLibraryMap	RenderResourceFactory::sMaterialLibrary;
 	bool				RenderResourceFactory::sActive = false;
 
 

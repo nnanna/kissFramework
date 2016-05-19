@@ -5,8 +5,8 @@
 
 
 #include "Material.h"
-#include <Maths/ks_Maths.inl>
 #include "SimpleShaderContainer.h"
+#include <Maths\ks_Maths.h>
 
 
 

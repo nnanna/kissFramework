@@ -38,6 +38,17 @@ namespace ks	{
 		return result;
 	}
 
+	u32 UIDGenerator::GetAsync()
+	{
+		u32 result(INVALID_UID);
+		do
+		{
+			result = atomic_increment( &mMarker ) - 1;
+		} while (result == INVALID_UID);
+
+		return result;
+	}
+
 	u32 UIDGenerator::GetAsync(const u32 mask)
 	{
 		u32 result(INVALID_UID), marker(0);

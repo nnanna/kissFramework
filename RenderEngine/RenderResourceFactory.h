@@ -7,13 +7,11 @@
 #pragma once
 
 #include "SimpleShaderContainer.h"
-#include "Material.h"
 
 
 namespace ks {
 
 	typedef std::unordered_map<ks32, SimpleShaderContainer*>		ShaderLibraryMap;
-	typedef std::unordered_map<ks32, Material>						MaterialLibraryMap;
 
 	class RenderResourceFactory
 	{
@@ -32,9 +30,7 @@ namespace ks {
 		static SimpleShaderContainer* findOrCreateShader(const char* shader_path);
 
 	private:
-
 		static ShaderLibraryMap		sShaderLibrary;
-		static MaterialLibraryMap	sMaterialLibrary;
 		static bool					sActive;
 	};
 

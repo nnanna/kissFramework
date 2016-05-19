@@ -8,12 +8,12 @@
 #include "SimpleShaderContainer.h"
 
 #ifdef TARGET_GL_SHADERS
+#include <Maths\ks_Maths.h>
 #include "RenderResourceFactory.h"
 #include <stdarg.h>
 #include "defines.h"
 #include "ErrorNotify.h"
 #include "GL/glew.h"
-#include "crc32.h"
 
 namespace ks {
 

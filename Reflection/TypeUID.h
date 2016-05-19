@@ -68,8 +68,10 @@ inline const char* ks::TypeUID<TType>::Typename()	\
 	{
 		UIDGenerator();
 
+
 		u32 Get(const u32 mask = 0);		// masking allows indirect support of UIDs that are less than 32bit
-		u32 GetAsync(const u32 mask = 0);
+		u32 GetAsync();
+		u32 GetAsync(const u32 mask);
 
 		static const u32 INVALID_UID;
 
@@ -83,7 +85,8 @@ inline const char* ks::TypeUID<TType>::Typename()	\
 	{
 	public:
 		static u32 Get(const u32 mask = 0)			{ return mGenerator.Get(mask); }
-		static u32 GetAsync(const u32 mask = 0)		{ return mGenerator.GetAsync(mask); }
+		static u32 GetAsync()						{ return mGenerator.GetAsync(); }
+		static u32 GetAsync(const u32 mask)			{ return mGenerator.GetAsync(mask); }
 
 	protected:
 		static UIDGenerator	mGenerator;
