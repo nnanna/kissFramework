@@ -26,6 +26,9 @@
     <Filter Include="Scripting">
       <UniqueIdentifier>{65d8ad8b-5e57-48e6-aee9-2584c0a22d18}</UniqueIdentifier>
     </Filter>
+    <Filter Include="RenderEngine">
+      <UniqueIdentifier>{d3770f95-2129-4d6a-8c61-43c4a20a6db7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Reflection\TypeUID.cpp">
@@ -58,6 +61,21 @@
     <ClCompile Include="..\Maths\Matrix4x4.cpp">
       <Filter>Maths</Filter>
     </ClCompile>
+    <ClCompile Include="..\RenderEngine\GLRenderer.cpp">
+      <Filter>RenderEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="..\RenderEngine\Light.cpp">
+      <Filter>RenderEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="..\RenderEngine\Material.cpp">
+      <Filter>RenderEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="..\RenderEngine\RenderResourceFactory.cpp">
+      <Filter>RenderEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="..\RenderEngine\SimpleGLSLContainer.cpp">
+      <Filter>RenderEngine</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Common\Debug.h">
@@ -70,9 +88,6 @@
       <Filter>Memory</Filter>
     </ClInclude>
     <ClInclude Include="..\Containers\Array.h">
-      <Filter>Containers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Containers\CyclicArray.h">
       <Filter>Containers</Filter>
     </ClInclude>
     <ClInclude Include="..\Maths\ks_Maths.h">
@@ -126,10 +141,34 @@
     <ClInclude Include="..\Common\ErrorNotify.h">
       <Filter>Common</Filter>
     </ClInclude>
+    <ClInclude Include="..\RenderEngine\GLRenderer.h">
+      <Filter>RenderEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\RenderEngine\Light.h">
+      <Filter>RenderEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\RenderEngine\Material.h">
+      <Filter>RenderEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\RenderEngine\RenderData.h">
+      <Filter>RenderEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\RenderEngine\RenderResourceFactory.h">
+      <Filter>RenderEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\RenderEngine\SimpleShaderContainer.h">
+      <Filter>RenderEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Containers\CyclicConcurrentQueue.h">
+      <Filter>Containers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Maths\ks_Maths.inl">
       <Filter>Maths</Filter>
+    </None>
+    <None Include="..\RenderEngine\RenderEngine.vcxproj.filters">
+      <Filter>RenderEngine</Filter>
     </None>
   </ItemGroup>
 </Project>

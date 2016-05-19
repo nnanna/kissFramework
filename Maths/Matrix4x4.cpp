@@ -11,7 +11,7 @@
 
 namespace ks {
 
-	const Matrix4x4 Matrix4x4::IDENTITY = Matrix4x4(1, 0, 0, 0,
+	const Matrix Matrix::IDENTITY = Matrix(1, 0, 0, 0,
 													0, 1, 0, 0,
 													0, 0, 1, 0,
 													0, 0, 0, 1);
@@ -43,7 +43,7 @@ namespace ks {
 			"usv.q C010, 0 + %0\n"
 			: "+m"(*result) : "r"(angle));
 	}
-	void matrixMultiplyUnaligned(Matrix4x4 * m_out, const Matrix4x4 *mat_a, const Matrix4x4 *mat_b)
+	void matrixMultiplyUnaligned(Matrix * m_out, const Matrix *mat_a, const Matrix *mat_b)
 	{
 		pspvfpu_use_matrices(gDaedalusVFPUContext, 0, VMAT0 | VMAT1 | VMAT2);
 
@@ -69,7 +69,7 @@ namespace ks {
 			: "=m" (*m_out) : "m" (*mat_a) ,"m" (*mat_b) : "memory" );
 	} 
 
-	void matrixMultiplyAligned(Matrix4x4 * m_out, const Matrix4x4 *mat_a, const Matrix4x4 *mat_b)
+	void matrixMultiplyAligned(Matrix * m_out, const Matrix *mat_a, const Matrix *mat_b)
 	{
 		pspvfpu_use_matrices(gDaedalusVFPUContext, 0, VMAT0 | VMAT1 | VMAT2);
 
@@ -96,7 +96,7 @@ namespace ks {
 	} 
 
 
-	void myCopyMatrix(Matrix4x4 *m_out, const Matrix4x4 *m_in)
+	void myCopyMatrix(Matrix *m_out, const Matrix *m_in)
 	{
 		__asm__ volatile (
 			"lv.q   R000, 0x0(%1)\n"
@@ -111,7 +111,7 @@ namespace ks {
 			: : "r" (m_out) , "r" (m_in) );
 	}
 
-	void myApplyMatrix(vec4 *v_out, const Matrix4x4 *mat, const vec4 *v_in)
+	void myApplyMatrix(vec4 *v_out, const Matrix *mat, const vec4 *v_in)
 	{
 		__asm__ volatile (
 			"lv.q   R000, 0x0(%1)\n"
@@ -128,13 +128,13 @@ namespace ks {
 
 #endif // DAEDALUS_PSP_USE_VFPU
 
-	Matrix4x4 & Matrix4x4::SetIdentity()
+	Matrix & Matrix::SetIdentity()
 	{
 		*this = IDENTITY;
 		return *this;
 	}
 
-	Matrix4x4 & Matrix4x4::SetScaling(float scale)
+	Matrix & Matrix::SetScaling(float scale)
 	{
 		for (u32 r = 0; r < 3; ++r)
 		{
@@ -146,7 +146,7 @@ namespace ks {
 		return *this;
 	}
 
-	Matrix4x4 & Matrix4x4::SetRotateX(float angle)
+	Matrix & Matrix::SetRotateX(float angle)
 	{
 		float	s(sinf(angle));
 		float	c(cosf(angle));
@@ -158,7 +158,7 @@ namespace ks {
 		return *this;
 	}
 
-	Matrix4x4 & Matrix4x4::SetRotateY(float angle)
+	Matrix & Matrix::SetRotateY(float angle)
 	{
 		float	s(sinf(angle));
 		float	c(cosf(angle));
@@ -170,7 +170,7 @@ namespace ks {
 		return *this;
 	}
 
-	Matrix4x4 & Matrix4x4::SetRotateZ(float angle)
+	Matrix & Matrix::SetRotateZ(float angle)
 	{
 		float	s(sinf(angle));
 		float	c(cosf(angle));
@@ -182,21 +182,21 @@ namespace ks {
 		return *this;
 	}
 
-	vec3 Matrix4x4::TransformCoord(const vec3 & vec) const
+	vec3 Matrix::TransformCoord(const vec3 & vec) const
 	{
 		return vec3(vec.x * m11 + vec.y * m21 + vec.z * m31 + m41,
 			vec.x * m12 + vec.y * m22 + vec.z * m32 + m42,
 			vec.x * m13 + vec.y * m23 + vec.z * m33 + m43);
 	}
 
-	vec3 Matrix4x4::TransformNormal(const vec3 & vec) const
+	vec3 Matrix::TransformNormal(const vec3 & vec) const
 	{
 		return vec3(vec.x * m11 + vec.y * m21 + vec.z * m31,
 			vec.x * m12 + vec.y * m22 + vec.z * m32,
 			vec.x * m13 + vec.y * m23 + vec.z * m33);
 	}
 
-	vec4 Matrix4x4::Transform(const vec4 & vec) const
+	vec4 Matrix::Transform(const vec4 & vec) const
 	{
 		return vec4(vec.x * m11 + vec.y * m21 + vec.z * m31 + vec.w * m41,
 			vec.x * m12 + vec.y * m22 + vec.z * m32 + vec.w * m42,
@@ -204,7 +204,7 @@ namespace ks {
 			vec.x * m14 + vec.y * m24 + vec.z * m34 + vec.w * m44);
 	}
 
-	vec3 Matrix4x4::Transform(const vec3 & vec) const
+	vec3 Matrix::Transform(const vec3 & vec) const
 	{
 		vec4	trans(vec.x * m11 + vec.y * m21 + vec.z * m31 + m41,
 			vec.x * m12 + vec.y * m22 + vec.z * m32 + m42,
@@ -228,15 +228,15 @@ namespace ks {
 		b = temp;
 	}
 
-	Matrix4x4		Matrix4x4::Transpose() const
+	Matrix		Matrix::Transpose() const
 	{
-		return Matrix4x4(m11, m21, m31, m41,
+		return Matrix(m11, m21, m31, m41,
 						m12, m22, m32, m42,
 						m13, m23, m33, m43,
 						m14, m24, m34, m44);
 	}
 
-	Matrix4x4	Matrix4x4::Inverse() const
+	Matrix	Matrix::Inverse() const
 	{
 		float	augmented[4][8];
 
@@ -306,13 +306,13 @@ namespace ks {
 		}
 
 
-		return Matrix4x4(augmented[0][4], augmented[0][5], augmented[0][6], augmented[0][7],
+		return Matrix(augmented[0][4], augmented[0][5], augmented[0][6], augmented[0][7],
 			augmented[1][4], augmented[1][5], augmented[1][6], augmented[1][7],
 			augmented[2][4], augmented[2][5], augmented[2][6], augmented[2][7],
 			augmented[3][4], augmented[3][5], augmented[3][6], augmented[3][7]);
 	}
 
-	void myMulMatrixCPU(Matrix4x4 * m_out, const Matrix4x4 *mat_a, const Matrix4x4 *mat_b)
+	void myMulMatrixCPU(Matrix * m_out, const Matrix *mat_a, const Matrix *mat_b)
 	{
 		for (u32 i = 0; i < 4; ++i)
 		{
@@ -328,9 +328,9 @@ namespace ks {
 	}
 
 
-	Matrix4x4 Matrix4x4::operator*(const Matrix4x4 & rhs) const
+	Matrix Matrix::operator*(const Matrix & rhs) const
 	{
-		Matrix4x4 r;
+		Matrix r;
 
 #ifdef DAEDALUS_PSP_USE_VFPU
 		matrixMultiplyUnaligned( &r, this, &rhs );
@@ -350,7 +350,7 @@ namespace ks {
 		return r;
 	}
 
-	void	Matrix4x4::print() const
+	void	Matrix::print() const
 	{
 		printf(
 			" %#+12.5f %#+12.5f %#+12.5f %#+12.5f\n"

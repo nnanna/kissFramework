@@ -13,7 +13,7 @@
 **  File: ARCCRC16.C
 */
 
-void init_crc_table(void);
+void init_crc_table();
 uint16_t crc_calc(uint16_t crc, char *buf, unsigned nbytes);
 void do_file(char *fn);
 

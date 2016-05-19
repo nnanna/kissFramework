@@ -201,14 +201,14 @@ namespace ks {
 	//=======================================================================================================================
 	// Matrix
 	//=======================================================================================================================
-	class Matrix4x4
+	class Matrix
 	{
 	public:
 
-		Matrix4x4()
+		Matrix()
 		{}
 
-		Matrix4x4(float _11, float _12, float _13, float _14,
+		Matrix(float _11, float _12, float _13, float _14,
 			float _21, float _22, float _23, float _24,
 			float _31, float _32, float _33, float _34,
 			float _41, float _42, float _43, float _44)
@@ -218,16 +218,16 @@ namespace ks {
 			, m41(_41), m42(_42), m43(_43), m44(_44)
 		{}
 
-		Matrix4x4 operator*(const Matrix4x4 & rhs) const;
+		Matrix operator*(const Matrix & rhs) const;
 
-		Matrix4x4 & SetIdentity();
-		Matrix4x4 & SetScaling(float scale);
-		Matrix4x4 & SetRotateX(float angle);
-		Matrix4x4 & SetRotateY(float angle);
-		Matrix4x4 & SetRotateZ(float angle);
+		Matrix & SetIdentity();
+		Matrix & SetScaling(float scale);
+		Matrix & SetRotateX(float angle);
+		Matrix & SetRotateY(float angle);
+		Matrix & SetRotateZ(float angle);
 
-		Matrix4x4 Transpose() const;
-		Matrix4x4 Inverse() const;
+		Matrix Transpose() const;
+		Matrix Inverse() const;
 
 		vec3 TransformCoord(const vec3 & vec) const;
 		vec3 TransformNormal(const vec3 & vec) const;
@@ -252,7 +252,7 @@ namespace ks {
 		};
 
 
-		static const Matrix4x4 IDENTITY;
+		static const Matrix IDENTITY;
 	};
 
 	void buildProjectionMatrix(float fieldOfView,

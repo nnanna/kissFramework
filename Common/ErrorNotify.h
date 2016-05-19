@@ -4,28 +4,29 @@
 */
 
 
-#ifndef ERRORNOTIFY_H
-#define ERRORNOTIFY_H
+#ifndef KS_ERRORNOTIFY_H
+#define KS_ERRORNOTIFY_H
+
+namespace ks {
+
+	class ErrorNotify
+	{
+	public:
+
+		ErrorNotify();
+
+		ErrorNotify(const char* error);
+
+		~ErrorNotify();
+
+		void	PrintError();
 
 
-class ErrorNotify
-{
-public:
+	private:
 
-	ErrorNotify();
+		char	mErrString[512];
+	};
 
-	ErrorNotify( const char* error );
-
-	~ErrorNotify();
-
-	void	PrintError();
-
-
-private:
-
-	char	mErrString[512];
-
-
-};
+}	// namespace ks
 
 #endif
