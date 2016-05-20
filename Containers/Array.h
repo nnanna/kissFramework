@@ -716,6 +716,8 @@ namespace ks {
 			if (new_capacity < min_capacity)
 				new_capacity = min_capacity;
 			set_capacity(new_capacity);
+
+			details::construct<value_type>( _begin + prev_size, new_capacity - prev_size, static_cast<TAllocator&>(*this) );
 		}
 
 		void set_capacity(size_type new_capacity)
