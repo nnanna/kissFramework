@@ -153,9 +153,21 @@ namespace ks {
 		}
 
 		template<typename T, class TAllocator>
-		void copy_construct( if_copyable_t<T> * pDest, const size_t pSize, TAllocator& pAllocator, const T& pFillValue )
+		void copy_construct( if_copyable_t<T> * pDest, TAllocator& pAllocator, const T& pFillValue )
+		{
+			memcpy(pDest, &pFillValue, sizeof(T));
+		}
+
+		template<typename T, class TAllocator>
+		void copy_construct(if_copyable_t<T> * pDest, const size_t pSize, TAllocator& pAllocator, const T& pFillValue)
 		{
 			duff_fill(pDest, pFillValue, pSize);
+		}
+
+		template<typename T, class TAllocator>
+		void copy_construct(if_non_copyable_t<T> * pDest, TAllocator& pAllocator, const T& pFillValue)
+		{
+			pAllocator.construct(pDest, pFillValue);
 		}
 
 		template<typename T, class TAllocator>
@@ -542,7 +554,7 @@ namespace ks {
 			if ( _size + 1 > _capacity)
 				grow();
 
-			details::copy_construct( _begin + _size, 1, static_cast<TAllocator&>(*this), item );
+			details::copy_construct( _begin + _size, static_cast<TAllocator&>(*this), item );
 			++_size;
 		}
 
