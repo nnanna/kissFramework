@@ -87,7 +87,7 @@ namespace ks {
 			static_assert( PROCESS_MAX_SIZE >= sizeof(ProcessFunction), "That's a pretty huge lambda you've got there" );
 			static_assert( COMPLETOR_MAX_SIZE >= sizeof(CompletionFunction), "Whoa, what's in that completion callback!?" );
 
-			mProcessDispatcher = CompletionForwarder<ProcessFunction, CompletionFunction, size_t>::GetInterface();
+			mProcessDispatcher = CompletionForwarder<ProcessFunction, CompletionFunction, decltype(pProcess())>::GetInterface();
 			allocDispatcher(mProcessDispatcher, mProcess, (char*)(&pProcess), mOnCompletion, (char*)(&pCompletion));
 			setName( pName );
 		}

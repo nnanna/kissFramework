@@ -93,7 +93,7 @@ namespace ks {
 		inline size_t operator ()(char* pFuncPtr) const override
 		{
 			_FN* func = (_FN*)(pFuncPtr);
-			return (*func)();
+			return (size_t)(*func)();
 		}
 
 		inline void operator ()(char* pFuncPtr, const char* pArg) const override

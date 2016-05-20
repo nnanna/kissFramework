@@ -75,7 +75,7 @@ namespace ks {
 		for (u32 n = 0; n < mWorkerThreads.size(); ++n)
 			Signal();
 
-		THREAD_SLEEP(3);		// @TODO: don't use glut - it makes you do bad things
+		THREAD_SLEEP(30);		// @TODO: don't use glut - it makes you do bad things
 
 		for (auto i : mWorkerThreads)
 			delete i;
