@@ -106,7 +106,7 @@ namespace ks {
 		{
 			if( this != &pRHS )
 			{
-				const ksU32 rhsSig	= atomic_or_into( &pRHS.mSignature, 0 );
+				const ksU32 rhsSig	= atomic_or( &pRHS.mSignature, 0 );
 				
 				// atomic validate & invalidate other job before moving. Else, it's already executing or invalid.
 				if( rhsSig != JS_INVALID && atomic_compare_and_swap( &pRHS.mSignature, rhsSig, JS_INVALID ) == rhsSig )

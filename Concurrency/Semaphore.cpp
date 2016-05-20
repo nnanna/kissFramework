@@ -76,26 +76,33 @@ namespace ks {
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Event
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	Event::Event(bool state) : mOpen(state), mListeners(0)
+
+
+#define EVENT_STATE_BIT					31
+
+	Event::Event(bool state) : mState( (int)state << EVENT_STATE_BIT )
 	{}
 
 	void Event::SetState(bool state)
 	{
-		atomic_or_into(&mOpen, state);
+		if (state)
+			ATOMIC_SET_BIT(mState, EVENT_STATE_BIT);
+		else
+			ATOMIC_CLEAR_BIT(mState, EVENT_STATE_BIT);
 	}
 
 	void Event::Notify()
 	{
-		atomic_and(&mOpen, false);
-		unsigned count = atomic_or_into(&mListeners, 0);
+		ATOMIC_CLEAR_BIT(mState, EVENT_STATE_BIT);
+		unsigned count = atomic_or(&mState, 0);
 		mSem.signal(count);
 	}
 
 	void Event::Wait()
 	{
-		atomic_increment(&mListeners);
-		if (mOpen)
+		atomic_increment(&mState);
+		if (ATOMIC_READ_BIT(mState, EVENT_STATE_BIT))
 			mSem.wait();
-		atomic_decrement(&mListeners);
+		atomic_decrement(&mState);
 	}
 }

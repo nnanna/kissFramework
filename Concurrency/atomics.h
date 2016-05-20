@@ -42,7 +42,7 @@ SOFTWARE.
 	#define atomic_exchange_pointer(ptr, newval)					InterlockedExchangePointer(ptr, newval)
 	#define atomic_increment										InterlockedIncrement
 	#define atomic_decrement										InterlockedDecrement
-	#define atomic_or_into(ptr, val)								InterlockedOr( (volatile long*)ptr, val )
+	#define atomic_or(ptr, val)										InterlockedOr( (volatile long*)ptr, val )
 	#define atomic_and(ptr, val)									InterlockedAnd( (volatile long*)ptr, val )
 	#define atomic_add(ptr, val)									InterlockedAdd( (volatile long*)ptr, val )
 
@@ -83,5 +83,9 @@ namespace ks
 
 #endif
 
+
+#define ATOMIC_SET_BIT(dest, bit)		atomic_or(&dest, (1 << bit) )
+#define ATOMIC_CLEAR_BIT(dest, bit)		atomic_and(&dest, ~(1 << bit) )
+#define ATOMIC_READ_BIT(dest, bit)		atomic_or(&dest, 0) >> bit
 
 #endif /* ATOMICS_H_ */

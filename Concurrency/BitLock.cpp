@@ -29,7 +29,7 @@ namespace ks {
 	{
 		index &= 31;							// to bit-range
 		const u32 mask = (1 << index);
-		while (((atomic_or_into(mBits, mask) & mask) >> index) != 0)
+		while (((atomic_or(mBits, mask) & mask) >> index) != 0)
 			THREAD_SWITCH;
 	}
 
@@ -49,7 +49,7 @@ namespace ks {
 		u32 i = index >> 5;						// (index / 32) == array_index
 		index &= 31;							// bit index
 		const u32 mask = (1 << index);
-		while (((atomic_or_into(mBits + i, mask) & mask) >> index) != 0)
+		while (((atomic_or(mBits + i, mask) & mask) >> index) != 0)
 			THREAD_SWITCH;
 	}
 
