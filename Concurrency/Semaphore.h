@@ -23,6 +23,21 @@ namespace ks {
 
 		size_t	mCtx;
 	};
+
+
+	class Event
+	{
+	public:
+		Event(bool state = true);
+		void SetState(bool state);
+		void Notify();
+		void Wait();
+
+	private:
+		bool		mOpen;
+		unsigned	mListeners;
+		Semaphore	mSem;
+	};
 }
 
 #endif

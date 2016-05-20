@@ -2,6 +2,7 @@
 #define KERNEL_SEMAPHORE	_MSC_VER
 
 #include "Semaphore.h"
+#include "atomics.h"
 #if KERNEL_SEMAPHORE
 #include <Windows.h>
 #else
@@ -52,7 +53,7 @@ namespace ks {
 
 	Semaphore::Semaphore()
 	{
-		mCtx = (size_t)CreateSemaphore(NULL, 0, 0x0fffffff, NULL);
+		mCtx = (size_t)CreateSemaphore(NULL, 0, 0x7fffffff, NULL);
 	}
 
 	Semaphore::~Semaphore()
@@ -72,4 +73,29 @@ namespace ks {
 
 #endif
 
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Event
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	Event::Event(bool state) : mOpen(state), mListeners(0)
+	{}
+
+	void Event::SetState(bool state)
+	{
+		atomic_or_into(&mOpen, state);
+	}
+
+	void Event::Notify()
+	{
+		atomic_and(&mOpen, false);
+		unsigned count = atomic_or_into(&mListeners, 0);
+		mSem.signal(count);
+	}
+
+	void Event::Wait()
+	{
+		atomic_increment(&mListeners);
+		if (mOpen)
+			mSem.wait();
+		atomic_decrement(&mListeners);
+	}
 }
