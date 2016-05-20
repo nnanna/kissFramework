@@ -44,6 +44,7 @@ SOFTWARE.
 	#define atomic_decrement										InterlockedDecrement
 	#define atomic_or_into(ptr, val)								InterlockedOr( (volatile long*)ptr, val )
 	#define atomic_and(ptr, val)									InterlockedAnd( (volatile long*)ptr, val )
+	#define atomic_add(ptr, val)									InterlockedAdd( (volatile long*)ptr, val )
 
 	#define WRITE_BARRIER											_WriteBarrier(); MemoryBarrier()
 	#define READ_BARRIER											_ReadBarrier(); MemoryBarrier()
@@ -67,6 +68,7 @@ namespace ks
 -													: "=r" (ret) :"r" (dest), "0" (val) : "memory" );
 	#define atomic_increment(x)						__sync_add_and_fetch( x, 1 )
 	#define atomic_decrement(x)						__sync_sub_and_fetch( x, 1 )
+	#define atomic_add(ptr, val)					__sync_add_and_fetch( ptr, val )
 
 	#define WRITE_BARRIER							asm volatile("": : :"memory"); __sync_synchronize()
 	#define READ_BARRIER							asm volatile("": : :"memory"); __sync_synchronize()
