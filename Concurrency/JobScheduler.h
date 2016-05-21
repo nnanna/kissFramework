@@ -32,7 +32,9 @@ namespace ks {
 	template<typename T>
 	class CyclicConcurrentQueue;
 
+	class Semaphore;
 	struct JSThread;
+	struct JSEventHandle;
 	//
 	////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -54,15 +56,19 @@ namespace ks {
 
 		bool SingleProducerMode() const;
 
+		void Wait(const ksU32 pJobID);
+
+	private:
+		friend JSThread;
 		void Signal();
 
 		void Wait();
 
-	private:
 		CyclicConcurrentQueue<Job>*	mJobQueue;
 		Array<JSThread*>			mWorkerThreads;
+		Array<JSEventHandle*>		mCompletionEvents;
 		ksU32						mFlags;
-		class Semaphore*			mSemaphore;
+		Semaphore*					mSemaphore;
 
 	};
 }

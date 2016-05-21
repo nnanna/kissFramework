@@ -13,11 +13,15 @@ namespace ks {
 
 		~Semaphore();
 
+		Semaphore(Semaphore&& o);
+		Semaphore& operator=(Semaphore&& o);
+
 		void signal(int count = 1);
 
 		void wait();
 
 	private:
+		void destroy();
 		Semaphore(const Semaphore&);
 		Semaphore& operator=(const Semaphore&);
 

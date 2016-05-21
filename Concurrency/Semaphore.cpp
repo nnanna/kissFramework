@@ -3,6 +3,7 @@
 
 #include "Semaphore.h"
 #include "atomics.h"
+#include "defines.h"
 #if KERNEL_SEMAPHORE
 #include <Windows.h>
 #else
@@ -28,6 +29,11 @@ namespace ks {
 	}
 
 	Semaphore::~Semaphore()
+	{
+		destroy();
+	}
+
+	void Semaphore::destroy()
 	{
 		delete (SemContext*)mCtx;
 	}
@@ -58,7 +64,12 @@ namespace ks {
 
 	Semaphore::~Semaphore()
 	{
-		CloseHandle((HANDLE)mCtx);
+		destroy();
+	}
+
+	void Semaphore::destroy()
+	{
+		if(mCtx) CloseHandle((HANDLE)mCtx);
 	}
 
 	void Semaphore::signal(int count /*= 1*/)
@@ -73,6 +84,21 @@ namespace ks {
 
 #endif
 
+	Semaphore::Semaphore(Semaphore&& o) : mCtx(NULL)
+	{
+		*this = ks::move(o);
+	}
+
+	Semaphore& Semaphore::operator = (Semaphore&& o)
+	{
+		if ( this != &o )
+		{
+			destroy();
+			mCtx = o.mCtx;
+			o.mCtx = NULL;
+		}
+	}
+
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Event
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -81,13 +107,13 @@ namespace ks {
 
 	void Event::SetState(bool state)
 	{
-		atomic_or_into(&mOpen, state);
+		atomic_or(&mOpen, state);
 	}
 
 	void Event::Notify()
 	{
 		atomic_and(&mOpen, false);
-		unsigned count = atomic_or_into(&mListeners, 0);
+		unsigned count = atomic_or(&mListeners, 0);
 		mSem.signal(count);
 	}
 

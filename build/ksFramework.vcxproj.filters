@@ -76,6 +76,9 @@
     <ClCompile Include="..\RenderEngine\SimpleGLSLContainer.cpp">
       <Filter>RenderEngine</Filter>
     </ClCompile>
+    <ClCompile Include="..\Concurrency\Job.cpp">
+      <Filter>Concurrency</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Common\Debug.h">

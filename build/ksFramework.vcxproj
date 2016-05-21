@@ -22,6 +22,7 @@
     <ClCompile Include="..\Common\crc32.cpp" />
     <ClCompile Include="..\Common\ErrorNotify.cpp" />
     <ClCompile Include="..\Concurrency\BitLock.cpp" />
+    <ClCompile Include="..\Concurrency\Job.cpp" />
     <ClCompile Include="..\Concurrency\JobScheduler.cpp" />
     <ClCompile Include="..\Concurrency\ReadWriteLock.cpp" />
     <ClCompile Include="..\Concurrency\Semaphore.cpp" />

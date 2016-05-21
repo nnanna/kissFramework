@@ -106,7 +106,7 @@ namespace ks {
 		{
 			if( this != &pRHS )
 			{
-				const ksU32 rhsSig	= atomic_or_into( &pRHS.mSignature, 0 );
+				const ksU32 rhsSig	= atomic_or( &pRHS.mSignature, 0 );
 				
 				// atomic validate & invalidate other job before moving. Else, it's already executing or invalid.
 				if( rhsSig != JS_INVALID && atomic_compare_and_swap( &pRHS.mSignature, rhsSig, JS_INVALID ) == rhsSig )
@@ -209,40 +209,20 @@ namespace ks {
 	class JobHandle
 	{
 	public:
-		JobHandle() : mJob( nullptr ), mJobID( UIDGenerator::INVALID_UID )
-		{}
+		JobHandle();
 
-		JobHandle( const Job* const pJob ) : mJob( pJob ), mJobID( mJob->UID() )
-		{}
+		JobHandle(const Job* const pJob);
 
-		JobState Cancel()
-		{
-			const Job* job( mJob );
-			if( validate(job) )
-				job->Cancel(JOB_SIG_ENCODE(JS_WAITING, mJobID));
-			return GetState();
-		}
+		JobState Cancel();
 		
-		bool IsValid() const			{ return validate(mJob); }
+		bool IsValid() const;
 
-		JobState GetState() const		{ auto job(mJob); return validate(job) ? job->State() : JS_INVALID; }
+		JobState GetState() const;
 
-		bool StealExecute()
-		{
-			bool success = false;
-			auto job( mJob );
-			if( validate( job ) )
-			{
-				Job job_copy;
-				job_copy.explicit_copy(*job);
-				if( job->Cancel( JOB_SIG_ENCODE(JS_WAITING, mJobID)) )
-				{
-					job_copy.Execute();
-					success = true;
-				}
-			}
-			return success;
-		}
+		bool StealExecute();
+
+		// wait for job to complete or run job if still pending
+		void Sync();
 
 	private:
 		const Job*	mJob;

@@ -28,20 +28,62 @@ namespace ks {
 #define	JS_FLAG_RUNNING			(1<<1)
 #define	JS_FLAG_SINGLEPRODUCER	(1<<2)
 
+	struct JSEventHandle
+	{
+		JSEventHandle() : mJobID(0)
+		{}
+
+		void Start(u32 id)
+		{
+			atomic_set(&mJobID, id);
+			mEvent.SetState(true);
+		}
+
+		void Stop()
+		{
+			atomic_and(&mJobID, 0);
+			mEvent.Notify();
+		}
+
+		ksU32 JobID() const		{ return atomic_or(&mJobID, 0); }
+
+		bool Wait(ksU32 pJobID)
+		{
+			if (pJobID == JobID())
+			{
+				mEvent.Wait();
+				return true;
+			}
+
+			return false;
+		}
+
+		ksU32	mJobID;
+		Event	mEvent;
+	};
+
 	struct JSThread
 	{
-		JSThread(JobScheduler* pArg1, CyclicConcurrentQueue<Job>* pArg2) : mThread{ ThreadRoutine, pArg1, pArg2 }
+		JSThread(JobScheduler* pArg1, CyclicConcurrentQueue<Job>* pArg2, ksU32 worker_index)
+			: mThread{ ThreadRoutine, pArg1, pArg2, worker_index }
 		{
 			mThread.detach();		// gotta manage its lifetime ourselves
 		}
 
-		static void ThreadRoutine(JobScheduler* context, CyclicConcurrentQueue<Job>* queue)
+		static void ThreadRoutine(JobScheduler* context, CyclicConcurrentQueue<Job>* queue, const ksU32 worker_index)
 		{
+			JSEventHandle* jsevent = context->mCompletionEvents[worker_index];
 			while (context->Running())
 			{
 				auto job = queue->dequeue();
 				if (*job)
+				{
+					jsevent->Start(job->UID());
+
 					job->Execute();
+
+					jsevent->Stop();
+				}
 				else
 				{
 					context->Wait();
@@ -55,7 +97,7 @@ namespace ks {
 
 
 	JobScheduler::JobScheduler(ksU32 pNumThreads, ksU32 pMaxNumJobs, bool pSingleProducer )
-		: mJobQueue(nullptr), mWorkerThreads(pNumThreads), mFlags(0), mSemaphore(nullptr)
+		: mJobQueue(nullptr), mWorkerThreads(pNumThreads), mCompletionEvents(pNumThreads), mFlags(0), mSemaphore(nullptr)
 	{
 		if (pSingleProducer)
 			mFlags |= JS_FLAG_SINGLEPRODUCER;
@@ -66,7 +108,10 @@ namespace ks {
 		mSemaphore		= new Semaphore();
 
 		for (ksU32 i = 0; i < pNumThreads; ++i)
-			mWorkerThreads.push_back(new JSThread(this, mJobQueue));
+		{
+			mCompletionEvents.push_back(new JSEventHandle());
+			mWorkerThreads.push_back(new JSThread(this, mJobQueue, i));
+		}
 	}
 
 	JobScheduler::~JobScheduler()
@@ -95,6 +140,32 @@ namespace ks {
 	bool JobScheduler::Running() const				{ return (mFlags & JS_FLAG_RUNNING) > 0; }
 
 	bool JobScheduler::SingleProducerMode() const	{ return (mFlags & JS_FLAG_SINGLEPRODUCER) > 0; }
+
+
+	void JobScheduler::Wait(const ksU32 pJobID)
+	{
+		// between a job being poppped off the queue and signaling the job event Start()
+		// there's a small window during which a wait could be issued on that job
+		// resulting in a false completion status since it's neither WAITING nor currently RUNNING
+		// I'm temporarily alleviating this by 'spinning' a few times before concluding that the job is completed
+		// 'temporarily' == till my brain gets smart enough to figure out a super cool fix
+		bool found = false;
+		ksU32 num_spins = 0;
+		static ksU32 MAX_SPIN_CHECK(5);
+		while (found == false && num_spins++ < MAX_SPIN_CHECK)
+		{
+			for (ksU32 i = 0; i < mCompletionEvents.size(); ++i)
+			{
+				if (mCompletionEvents[i]->JobID() == pJobID)
+				{
+					found = mCompletionEvents[i]->Wait(pJobID);
+					break;
+				}
+			}
+
+			if(!found)	THREAD_SWITCH;
+		}
+	}
 
 
 	void JobScheduler::Signal()
