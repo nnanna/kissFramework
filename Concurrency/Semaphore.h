@@ -38,8 +38,7 @@ namespace ks {
 		void Wait();
 
 	private:
-		bool		mOpen;
-		unsigned	mListeners;
+		unsigned	mState;
 		Semaphore	mSem;
 	};
 }

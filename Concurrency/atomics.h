@@ -45,6 +45,7 @@ SOFTWARE.
 	#define atomic_or(ptr, val)										InterlockedOr( (volatile long*)ptr, val )
 	#define atomic_and(ptr, val)									InterlockedAnd( (volatile long*)ptr, val )
 	#define atomic_set(ptr, newval)									InterlockedExchange(ptr, newval)
+	#define atomic_add(ptr, val)									InterlockedAdd( (volatile long*)ptr, val )
 
 	#define WRITE_BARRIER											_WriteBarrier(); MemoryBarrier()
 	#define READ_BARRIER											_ReadBarrier(); MemoryBarrier()
@@ -68,6 +69,7 @@ namespace ks
 -													: "=r" (ret) :"r" (dest), "0" (val) : "memory" );
 	#define atomic_increment(x)						__sync_add_and_fetch( x, 1 )
 	#define atomic_decrement(x)						__sync_sub_and_fetch( x, 1 )
+	#define atomic_add(ptr, val)					__sync_add_and_fetch( ptr, val )
 
 	#define WRITE_BARRIER							asm volatile("": : :"memory"); __sync_synchronize()
 	#define READ_BARRIER							asm volatile("": : :"memory"); __sync_synchronize()
@@ -82,5 +84,9 @@ namespace ks
 
 #endif
 
+
+#define ATOMIC_SET_BIT(dest, bit)		atomic_or(&dest, (1 << bit) )
+#define ATOMIC_CLEAR_BIT(dest, bit)		atomic_and(&dest, ~(1 << bit) )
+#define ATOMIC_READ_BIT(dest, bit)		atomic_or(&dest, 0) >> bit
 
 #endif /* ATOMICS_H_ */
