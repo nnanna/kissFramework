@@ -227,7 +227,6 @@ namespace ks {
 	private:
 		const Job*	mJob;
 		ksU32		mJobID;
-		char cache_line_pad[CACHE_LINE_SIZE - sizeof(Job*) - sizeof(ksU32)];		// don't share this cache with another.
 
 		bool validate( const Job* pJob ) const	{ return pJob && pJob->UID() == mJobID && mJobID != UIDGenerator::INVALID_UID; }
 	};
