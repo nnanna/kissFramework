@@ -87,10 +87,10 @@ namespace ks
 
 			void operator=(queue_item&& o)
 			{
-				if (o.valid && this != &o)
+				valid = o.valid;
+				if (valid && this != &o)
 				{
 					data	= ks::move(o.data);
-					valid	= o.valid;
 					o.valid = false;
 				}
 			}

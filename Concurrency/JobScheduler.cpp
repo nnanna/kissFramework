@@ -52,6 +52,7 @@ namespace ks {
 			if (pJobID == JobID())
 			{
 				mEvent.Wait();
+				//KS_ASSERT(pJobID == mJobID || mJobID == 0 && "we've possibly ended up waiting on a later job?");
 				return true;
 			}
 
@@ -73,9 +74,11 @@ namespace ks {
 		static void ThreadRoutine(JobScheduler* context, CyclicConcurrentQueue<Job>* queue, const ksU32 worker_index)
 		{
 			JSEventHandle* jsevent = context->mCompletionEvents[worker_index];
+
+			CyclicConcurrentQueue<Job>::queue_item job;
 			while (context->Running())
 			{
-				auto job = queue->dequeue();
+				queue->dequeue(job);
 				if (*job)
 				{
 					jsevent->Start(job->UID());
