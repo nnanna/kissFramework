@@ -71,8 +71,16 @@ namespace ks
 
 		struct queue_item
 		{
-			queue_item(T& pItem, bool pValid) : data(pItem), valid(pValid)
-			{}
+			queue_item(T&& pItem, bool pValid) : valid(pValid)
+			{
+				if (valid)	data	= ks::move(pItem);
+			}
+
+			queue_item(queue_item&& o) : valid(o.valid)
+			{
+				if (valid)	data	= ks::move(o.data);
+				o.valid				= false;
+			}
 
 			bool operator*() const		{ return valid; }
 			T* operator->()				{ return &data; }
@@ -80,8 +88,8 @@ namespace ks
 			operator T&()				{ return data; }
 			operator const T&() const	{ return data; }
 
-			T& 			data;
-			const bool	valid;
+			T 		data;
+			bool	valid;
 		};
 
 		CyclicConcurrentQueue(const ksU32 pCapacity) :
@@ -189,9 +197,9 @@ namespace ks
 				available	= !empty();
 			} while (available && ks::fail_compare_swap<mode>(mReadHead, index, nextHead));
 	
-			auto qitem 		= available ? queue_item( ks::move(mItems[index]), available) : queue_item();
+			queue_item qitem( ks::move(mItems[index]), available );
 	
-			while( ks::fail_compare_swap<mode>(mWriteHead, index, nextHead) )
+			while( available && ks::fail_compare_swap<mode>(mWriteHead, index, nextHead) )
 			{
 				THREAD_YIELD;
 			}
