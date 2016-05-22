@@ -712,7 +712,7 @@ namespace ks {
 		void grow(size_type min_capacity = 0)
 		{
 			size_type prev_size		= _size;
-			size_type new_capacity	= _capacity + (_capacity >> 2) + 8;
+			size_type new_capacity	= _capacity + (_capacity >> 2) + 2;
 			if (new_capacity < min_capacity)
 				new_capacity = min_capacity;
 			set_capacity(new_capacity);
