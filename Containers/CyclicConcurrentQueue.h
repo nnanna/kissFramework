@@ -71,6 +71,9 @@ namespace ks
 
 		struct queue_item
 		{
+			queue_item() : valid(false)
+			{}
+
 			queue_item(T&& pItem, bool pValid) : valid(pValid)
 			{
 				if (valid)	data	= ks::move(pItem);
@@ -82,6 +85,16 @@ namespace ks
 				o.valid				= false;
 			}
 
+			void operator=(queue_item&& o)
+			{
+				if (o.valid && this != &o)
+				{
+					data	= ks::move(o.data);
+					valid	= o.valid;
+					o.valid = false;
+				}
+			}
+
 			bool operator*() const		{ return valid; }
 			T* operator->()				{ return &data; }
 			const T* operator->() const	{ return &data; }
@@ -90,6 +103,9 @@ namespace ks
 
 			T 		data;
 			bool	valid;
+		private:
+			queue_item(const queue_item&);
+			queue_item& operator=(const queue_item&);
 		};
 
 		CyclicConcurrentQueue(const ksU32 pCapacity) :
@@ -113,6 +129,8 @@ namespace ks
 		T* const enqueue(T&& pItem)	{ return mIsPowerOfTwo ? enqueue<ccq_multi, true>(ks::move(pItem)) : enqueue<ccq_multi, false>(ks::move(pItem)); }
 
 		queue_item	dequeue()		{ return mIsPowerOfTwo ? dequeue<ccq_multi, true>() : dequeue<ccq_multi, false>(); }
+
+		void dequeue(queue_item& q)	{ return mIsPowerOfTwo ? dequeue<ccq_multi, true>(q) : dequeue<ccq_multi, false>(q); }
 
 		T* const enqueue_singlethreaded(T&& pItem)
 		{
@@ -169,11 +187,10 @@ namespace ks
 				while ((mReadTail != index) || fail_compare_swap<mode>(mReadTail, index, nextTail))
 				{
 					// http://www.codeproject.com/Articles/184046/Spin-Lock-in-C
-					if (timeout < CONTEXT_SWITCH_LATENCY)
+					if (timeout++ < CONTEXT_SWITCH_LATENCY)
 						THREAD_YIELD;
 					else
 						THREAD_SWITCH;
-					++timeout;
 				}
 
 				return &mItems[index];
@@ -186,24 +203,30 @@ namespace ks
 		}
 
 		template<CCQMode mode, bool isPowerOfTwo>
-		queue_item dequeue()
+		void dequeue(queue_item& qitem)
 		{
 			ksU32 index(0), nextHead(0);
 			bool available(false);
 			do
 			{
-				index		= mReadHead;
-				nextHead	= next<isPowerOfTwo>(index);
-				available	= !empty();
+				index = mReadHead;
+				nextHead = next<isPowerOfTwo>(index);
+				available = !empty();
 			} while (available && ks::fail_compare_swap<mode>(mReadHead, index, nextHead));
-	
-			queue_item qitem( ks::move(mItems[index]), available );
-	
-			while( available && ks::fail_compare_swap<mode>(mWriteHead, index, nextHead) )
+
+			qitem	= queue_item(ks::move(mItems[index]), available);
+
+			while (available && ks::fail_compare_swap<mode>(mWriteHead, index, nextHead))
 			{
 				THREAD_YIELD;
 			}
-	
+		}
+
+		template<CCQMode mode, bool isPowerOfTwo>
+		queue_item dequeue()
+		{
+			queue_item qitem;
+			dequeue<mode, isPowerOfTwo>(qitem);
 			return qitem;
 		}
 
