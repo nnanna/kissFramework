@@ -87,7 +87,8 @@ namespace ks
 		CyclicConcurrentQueue(const ksU32 pCapacity) :
 			mCapacity(pCapacity),
 			mIsPowerOfTwo(((pCapacity + 1) & pCapacity) == 0),
-			mHead(0),
+			mReadHead(0),
+			mWriteHead(0),
 			mReadTail(0),
 			mWriteTail(0)
 		{
@@ -116,14 +117,14 @@ namespace ks
 		}
 
 
-		inline bool full() const		{ return next<false>(mWriteTail) == mHead; }
-		inline bool empty() const		{ return mHead == mReadTail; }
-		inline void clear()				{ mHead = mReadTail = mWriteTail = 0; }
+		inline bool full() const		{ return next<false>(mWriteTail) == mWriteHead; }
+		inline bool empty() const		{ return mReadHead == mReadTail; }
+		inline void clear()				{ mReadHead = mWriteHead = mReadTail = mWriteTail = 0; }
 
 		ksU32 size() const
 		{
 			const ksU32 currentTail = mReadTail;
-			const ksU32 currentHead = mHead;
+			const ksU32 currentHead = mReadHead;
 			if (currentTail < currentHead)
 			{
 				return (mCapacity - currentHead) + currentTail;
@@ -148,7 +149,7 @@ namespace ks
 			{
 				index = mWriteTail;
 				nextTail = next<isPowerOfTwo>(index);
-			} while ((nextTail != mHead) && (failed = fail_compare_swap<mode>(mWriteTail, index, nextTail)));
+			} while ((nextTail != mWriteHead) && (failed = fail_compare_swap<mode>(mWriteTail, index, nextTail)));
 
 			if (!failed)
 			{
@@ -183,14 +184,19 @@ namespace ks
 			bool available(false);
 			do
 			{
-				index = mHead;
-				nextHead = next<isPowerOfTwo>(index);
-				available = !empty();
-			} while (available && fail_compare_swap<mode>(mHead, index, nextHead));
-
-			return queue_item(mItems[index], available);	// ideally you'd wanna grab the data before incrementing mHead, no?
-			// Generally, this is fine™ as long as the queue doesn't fill up quicker than it is consumed - which is a problem in itself - it should be adequately sized
-			// Options: use mWriteHead and mReadHead? Always copy the data in the do...while() (BAD)?
+				index		= mReadHead;
+				nextHead	= next<isPowerOfTwo>(index);
+				available	= !empty();
+			} while (available && ks::fail_compare_swap<mode>(mReadHead, index, nextHead));
+	
+			auto qitem 		= available ? queue_item( ks::move(mItems[index]), available) : queue_item();
+	
+			while( ks::fail_compare_swap<mode>(mWriteHead, index, nextHead) )
+			{
+				THREAD_YIELD;
+			}
+	
+			return qitem;
 		}
 
 		// 'technically wasteful' padding/alignment to eliminate false sharing.
@@ -198,15 +204,18 @@ namespace ks
 
 		T*	mItems;
 		char pad0[CACHE_LINE_SIZE - sizeof(T*)];
-
-		ksU32		mHead;
-		char pad1[CACHE_LINE_SIZE - sizeof(ksU32)];
+	
+		ksU32		mReadHead;
+		char pad1[ CACHE_LINE_SIZE - sizeof(ksU32) ];
+	
+		ksU32		mWriteHead;
+		char pad2[ CACHE_LINE_SIZE - sizeof(ksU32) ];
 
 		ksU32		mReadTail;
-		char pad2[CACHE_LINE_SIZE - sizeof(ksU32)];
+		char pad3[CACHE_LINE_SIZE - sizeof(ksU32)];
 
 		ksU32		mWriteTail;
-		char pad3[CACHE_LINE_SIZE - sizeof(ksU32)];
+		char pad4[CACHE_LINE_SIZE - sizeof(ksU32)];
 
 		const ksU32	mCapacity;
 		const bool	mIsPowerOfTwo;
