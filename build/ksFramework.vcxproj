@@ -24,6 +24,7 @@
     <ClCompile Include="..\Concurrency\BitLock.cpp" />
     <ClCompile Include="..\Concurrency\Job.cpp" />
     <ClCompile Include="..\Concurrency\JobScheduler.cpp" />
+    <ClCompile Include="..\Concurrency\Mutex.cpp" />
     <ClCompile Include="..\Concurrency\ReadWriteLock.cpp" />
     <ClCompile Include="..\Concurrency\Semaphore.cpp" />
     <ClCompile Include="..\Maths\ks_Maths.cpp" />
@@ -45,6 +46,7 @@
     <ClInclude Include="..\Concurrency\BitLock.h" />
     <ClInclude Include="..\Concurrency\JobScheduler.h" />
     <ClInclude Include="..\Concurrency\JobScheduler.hpp" />
+    <ClInclude Include="..\Concurrency\Mutex.h" />
     <ClInclude Include="..\Concurrency\ReadWriteLock.h" />
     <ClInclude Include="..\Concurrency\Job.h" />
     <ClInclude Include="..\Concurrency\JobDecoder.h" />

@@ -89,7 +89,7 @@ namespace ks {
 		*this = ks::move(o);
 	}
 
-	Semaphore& Semaphore::operator = (Semaphore&& o)
+	void Semaphore::operator = (Semaphore&& o)
 	{
 		if ( this != &o )
 		{

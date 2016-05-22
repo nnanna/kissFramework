@@ -14,7 +14,7 @@ namespace ks {
 		~Semaphore();
 
 		Semaphore(Semaphore&& o);
-		Semaphore& operator=(Semaphore&& o);
+		void operator=(Semaphore&& o);
 
 		void signal(int count = 1);
 

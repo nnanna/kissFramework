@@ -14,10 +14,13 @@
 #include "RenderResourceFactory.h"
 #include <Service.h>
 #include <RenderEngine\GL\glew.h>
+#include <Concurrency\Mutex.h>
 
 namespace ks {
 
 	static Material* sMRUMaterial(nullptr);
+
+	static Mutex gRenderDataGuard;
 
 
 	///////////////////////////////////////////////////////////////////////////////////
@@ -56,6 +59,7 @@ namespace ks {
 
 	void GLRenderer::addRenderData(const RenderData* r)
 	{
+		ScopedLock lock(gRenderDataGuard);
 		mRenderData.push_back(r);
 	}
 

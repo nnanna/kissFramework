@@ -79,6 +79,9 @@
     <ClCompile Include="..\Concurrency\Job.cpp">
       <Filter>Concurrency</Filter>
     </ClCompile>
+    <ClCompile Include="..\Concurrency\Mutex.cpp">
+      <Filter>Concurrency</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Common\Debug.h">
@@ -164,6 +167,9 @@
     </ClInclude>
     <ClInclude Include="..\Containers\CyclicConcurrentQueue.h">
       <Filter>Containers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Concurrency\Mutex.h">
+      <Filter>Concurrency</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
