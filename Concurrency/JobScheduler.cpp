@@ -82,6 +82,7 @@ namespace ks {
 				if (*job)
 				{
 					jsevent->Start(job->UID());
+					atomic_decrement(&context->mQueuedJobs);
 
 					job->Execute();
 
@@ -100,7 +101,7 @@ namespace ks {
 
 
 	JobScheduler::JobScheduler(ksU32 pNumThreads, ksU32 pMaxNumJobs, bool pSingleProducer )
-		: mJobQueue(nullptr), mWorkerThreads(pNumThreads), mCompletionEvents(pNumThreads), mFlags(0), mSemaphore(nullptr)
+		: mJobQueue(nullptr), mWorkerThreads(pNumThreads), mCompletionEvents(pNumThreads), mFlags(0), mQueuedJobs(0), mSemaphore(nullptr)
 	{
 		if (pSingleProducer)
 			mFlags |= JS_FLAG_SINGLEPRODUCER;
@@ -150,29 +151,40 @@ namespace ks {
 		// between a job being poppped off the queue and signaling the job event Start()
 		// there's a small window during which a wait could be issued on that job
 		// resulting in a false completion status since it's neither WAITING nor currently RUNNING
-		// I'm temporarily alleviating this by 'spinning' a few times before concluding that the job is completed
-		// 'temporarily' == till my brain gets smart enough to figure out a super cool fix
-		bool found = false;
-		ksU32 num_spins = 0;
-		static ksU32 MAX_SPIN_CHECK(5);
-		while (found == false && num_spins++ < MAX_SPIN_CHECK)
+		// I've fixed this by ensuring that we loop until the queuedjobs are in sync with the open CompletionEvents
+		const ksU32 numWorkers = mCompletionEvents.size();
+		bool found(false), jobsPending(true);
+		while (found == false && jobsPending)
 		{
-			for (ksU32 i = 0; i < mCompletionEvents.size(); ++i)
+			ksU32 active_events = 0;
+			for (ksU32 i = 0; i < numWorkers; ++i)
 			{
-				if (mCompletionEvents[i]->JobID() == pJobID)
+				const ksU32 id = mCompletionEvents[i]->JobID();
+				if (id == pJobID)
 				{
-					found = mCompletionEvents[i]->Wait(pJobID);
+					mCompletionEvents[i]->Wait(pJobID);
+					found = true;
 					break;
+				}
+				else if (id != 0)
+				{
+					++active_events;
 				}
 			}
 
-			if(!found)	THREAD_SWITCH;
+			if (!found)
+			{
+				jobsPending = !(mQueuedJobs <= active_events || active_events == numWorkers);
+				if(jobsPending)
+					THREAD_SWITCH;
+			}
 		}
 	}
 
 
 	void JobScheduler::Signal()
 	{
+		atomic_increment(&mQueuedJobs);
 		mSemaphore->signal();
 	}
 

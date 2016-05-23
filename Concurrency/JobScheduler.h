@@ -56,6 +56,8 @@ namespace ks {
 
 		bool SingleProducerMode() const;
 
+		// Waits on currently running jobs, and not queued jobs.
+		// It's recommended never to call this method directly, but instead to use JobHandle::Sync()
 		void Wait(const ksU32 pJobID);
 
 	private:
@@ -68,6 +70,7 @@ namespace ks {
 		Array<JSThread*>			mWorkerThreads;
 		Array<JSEventHandle*>		mCompletionEvents;
 		ksU32						mFlags;
+		ksU32						mQueuedJobs;
 		Semaphore*					mSemaphore;
 
 	};
