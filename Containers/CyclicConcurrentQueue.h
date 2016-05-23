@@ -218,7 +218,7 @@ namespace ks
 
 			while (available && ks::fail_compare_swap<mode>(mWriteHead, index, nextHead))
 			{
-				THREAD_YIELD;
+				THREAD_SWITCH;
 			}
 		}
 
