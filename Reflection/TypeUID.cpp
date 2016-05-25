@@ -32,9 +32,13 @@ namespace ks	{
 
 	u32 UIDGenerator::Get(const u32 mask /*= 0xffffffff*/)
 	{
-		if (mMarker == INVALID_UID) mMarker = DEFAULT_UID;
+		u32 result(INVALID_UID);
+		do
+		{
+			result = mMarker++ & mask;
+		} while (result == INVALID_UID);
 
-		return mMarker++ & mask;
+		return result;
 	}
 
 	u32 UIDGenerator::GetAsync(const u32 mask /*= 0xffffffff*/)
@@ -42,10 +46,10 @@ namespace ks	{
 		u32 result(INVALID_UID);
 		do
 		{
-			result = atomic_increment(&mMarker) - 1;
+			result = (atomic_increment(&mMarker) - 1) & mask;
 		} while (result == INVALID_UID);
 
-		return result & mask;
+		return result;
 	}
 
 
