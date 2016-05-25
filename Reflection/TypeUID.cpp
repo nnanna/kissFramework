@@ -30,37 +30,22 @@ namespace ks	{
 	UIDGenerator::UIDGenerator() : mMarker(DEFAULT_UID)
 	{}
 
-	u32 UIDGenerator::Get(const u32 mask)
+	u32 UIDGenerator::Get(const u32 mask /*= 0xffffffff*/)
 	{
-		if (mMarker == (INVALID_UID | mask)) mMarker = DEFAULT_UID;		// could get triggered on wrap-around
-		u32 result = mMarker++;
+		if (mMarker == INVALID_UID) mMarker = DEFAULT_UID;
 
-		return result;
+		return mMarker++ & mask;
 	}
 
-	u32 UIDGenerator::GetAsync()
+	u32 UIDGenerator::GetAsync(const u32 mask /*= 0xffffffff*/)
 	{
 		u32 result(INVALID_UID);
 		do
 		{
-			result = atomic_increment( &mMarker ) - 1;
+			result = atomic_increment(&mMarker) - 1;
 		} while (result == INVALID_UID);
 
-		return result;
-	}
-
-	u32 UIDGenerator::GetAsync(const u32 mask)
-	{
-		u32 result(INVALID_UID), marker(0);
-		do
-		{
-			marker = mMarker;
-			result = (marker == (INVALID_UID | mask)) ? DEFAULT_UID : marker;
-		} while (atomic_compare_and_swap(&mMarker, marker, result + 1) != marker);
-		
-		KS_ASSERT(result != INVALID_UID);
-
-		return result;
+		return result & mask;
 	}
 
 

@@ -68,7 +68,7 @@ namespace ks {
 		template<typename ProcessFunction>
 		Job( ProcessFunction&& pProcess, const char* pName ) :
 			mProcessDispatcher( nullptr ),
-			mID( InstanceUIDGenerator<Job>::GetAsync( JOB_UID_UNMASK ) ),
+			mID( InstanceUIDGenerator<Job>::GetAsync( JOB_UID_MASK ) ),
 			mSignature( JOB_SIG_ENCODE(JS_WAITING, mID) )
 		{
 			static_assert( PROCESS_MAX_SIZE >= sizeof(ProcessFunction), "That's a pretty huge lambda you've got there!" );
@@ -81,7 +81,7 @@ namespace ks {
 		template<typename ProcessFunction, typename CompletionFunction>
 		Job( ProcessFunction&& pProcess, CompletionFunction&& pCompletion, const char* pName ) :
 			mProcessDispatcher( nullptr ),
-			mID( InstanceUIDGenerator<Job>::GetAsync( JOB_UID_UNMASK ) ),
+			mID( InstanceUIDGenerator<Job>::GetAsync( JOB_UID_MASK ) ),
 			mSignature( JOB_SIG_ENCODE(JS_WAITING, mID) )
 		{
 			static_assert( PROCESS_MAX_SIZE >= sizeof(ProcessFunction), "That's a pretty huge lambda you've got there" );
