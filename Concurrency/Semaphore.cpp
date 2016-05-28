@@ -25,7 +25,7 @@ namespace ks {
 
 	Semaphore::Semaphore()
 	{
-		mCtx = (size_t)new SemContext();
+		mCtx = (uintptr_t)new SemContext();
 	}
 
 	Semaphore::~Semaphore()
@@ -59,7 +59,7 @@ namespace ks {
 
 	Semaphore::Semaphore()
 	{
-		mCtx = (size_t)CreateSemaphore(NULL, 0, 0x7fffffff, NULL);
+		mCtx = (uintptr_t)CreateSemaphore(NULL, 0, 0x7fffffff, NULL);
 	}
 
 	Semaphore::~Semaphore()
@@ -119,16 +119,22 @@ namespace ks {
 
 	void Event::Notify()
 	{
-		ATOMIC_CLEAR_BIT(mState, EVENT_STATE_BIT);
-		unsigned count = atomic_or(&mState, 0);
-		mSem.signal(count);
+		unsigned count = atomic_and(&mState, 0) & ~(1 << EVENT_STATE_BIT);
+		if (count)
+			mSem.signal(count);
 	}
 
 	void Event::Wait()
 	{
-		atomic_increment(&mState);
-		if (ATOMIC_READ_BIT(mState, EVENT_STATE_BIT))
+		unsigned val(0);
+		do
+		{
+			val = mState;
+		} while ((val >> EVENT_STATE_BIT) != 0 && atomic_compare_and_swap(&mState, val, val + 1) != val);
+		
+		if ((val >> EVENT_STATE_BIT))
+		{
 			mSem.wait();
-		atomic_decrement(&mState);
+		}
 	}
 }
