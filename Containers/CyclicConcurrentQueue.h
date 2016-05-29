@@ -188,9 +188,9 @@ namespace ks
 				{
 					// http://www.codeproject.com/Articles/184046/Spin-Lock-in-C
 					if (timeout++ < CONTEXT_SWITCH_LATENCY)
-						THREAD_YIELD;
+						ksYieldProcessor;
 					else
-						THREAD_SWITCH;
+						ksYieldThread;
 				}
 
 				return &mItems[index];
@@ -218,7 +218,7 @@ namespace ks
 
 			while (available && ks::fail_compare_swap<mode>(mWriteHead, index, nextHead))
 			{
-				THREAD_SWITCH;
+				ksYieldThread;
 			}
 		}
 

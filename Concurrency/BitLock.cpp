@@ -30,7 +30,7 @@ namespace ks {
 		index &= 31;							// to bit-range
 		const u32 mask = (1 << index);
 		while (((atomic_or(mBits, mask) & mask) >> index) != 0)
-			THREAD_SWITCH;
+			ksYieldThread;
 	}
 
 	void BitLock::Unlock(u32 index)
@@ -50,7 +50,7 @@ namespace ks {
 		index &= 31;							// bit index
 		const u32 mask = (1 << index);
 		while (((atomic_or(mBits + i, mask) & mask) >> index) != 0)
-			THREAD_SWITCH;
+			ksYieldThread;
 	}
 
 	template<u32 BITRANGE>

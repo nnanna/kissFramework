@@ -49,9 +49,9 @@ SOFTWARE.
 
 	#define WRITE_BARRIER											_WriteBarrier(); MemoryBarrier()
 	#define READ_BARRIER											_ReadBarrier(); MemoryBarrier()
-	#define THREAD_YIELD											YieldProcessor()
-	#define THREAD_SWITCH											SwitchToThread()
-	#define THREAD_SLEEP											Sleep
+	#define ksYieldProcessor										YieldProcessor()
+	#define ksYieldThread											SwitchToThread()
+	#define ksSleepMilli											Sleep
 namespace ks
 {
 	typedef DWORD													ThreadID;
@@ -73,9 +73,9 @@ namespace ks
 
 	#define WRITE_BARRIER							asm volatile("": : :"memory"); __sync_synchronize()
 	#define READ_BARRIER							asm volatile("": : :"memory"); __sync_synchronize()
-	#define THREAD_YIELD							asm volatile("pause\n": : :"memory")
-	#define THREAD_SWITCH							sched_yield()
-	#define THREAD_SLEEP							sleep
+	#define ksYieldProcessor						asm volatile("pause\n": : :"memory")
+	#define ksYieldThread							sched_yield()
+	#define ksSleepMilli							sleep
 	#define GetCurrentThreadId						pthread_self
 namespace ks
 {

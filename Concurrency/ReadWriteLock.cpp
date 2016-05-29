@@ -88,7 +88,7 @@ namespace ks {
 	//////////////////////////////////////////////////////////////////////////
 	// ReadWriteLock: lockless async read, explicit lock on write. Re-entrant
 	//////////////////////////////////////////////////////////////////////////
-	static void cond_wait()			{ THREAD_YIELD; }
+	static void cond_wait()			{ ksYieldProcessor; }
 
 	ReadWriteLock::ReadWriteLock() : mMutualExclusivityMask(exclusive_none), mWritingThread(0), mReentrancyCount(0)
 	{}
