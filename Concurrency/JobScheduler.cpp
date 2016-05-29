@@ -35,8 +35,8 @@ namespace ks {
 
 		void Start(u32 id)
 		{
-			atomic_set(&mJobID, id);
 			mEvent.SetState(true);
+			atomic_set(&mJobID, id);
 		}
 
 		void Stop()
@@ -78,6 +78,7 @@ namespace ks {
 			CyclicConcurrentQueue<Job>::queue_item job;
 			while (context->Running())
 			{
+				context->Wait();
 				queue->dequeue(job);
 				if (*job)
 				{
@@ -87,10 +88,6 @@ namespace ks {
 					job->Execute();
 
 					jsevent->Stop();
-				}
-				else
-				{
-					context->Wait();
 				}
 			}
 		}
@@ -124,7 +121,7 @@ namespace ks {
 		for (u32 n = 0; n < mWorkerThreads.size(); ++n)
 			Signal();
 
-		THREAD_SLEEP(30);		// @TODO: don't use glut - it makes you do bad things
+		ksSleepMilli(30);		// @TODO: don't use glut - it makes you do bad things
 
 		for (auto i : mWorkerThreads)
 			delete i;
@@ -156,14 +153,15 @@ namespace ks {
 		bool found(false), jobsPending(true);
 		while (found == false && jobsPending)
 		{
-			ksU32 active_events = 0;
+			const ksU32 queuedJobs(mQueuedJobs);	// this operation absotutely musn't be re-ordered
+			WRITE_BARRIER;
+			ksU32 active_events(0);
 			for (ksU32 i = 0; i < numWorkers; ++i)
 			{
-				const ksU32 id = mCompletionEvents[i]->JobID();
+				ksU32 id = mCompletionEvents[i]->JobID();
 				if (id == pJobID)
 				{
-					mCompletionEvents[i]->Wait(pJobID);
-					found = true;
+					found = mCompletionEvents[i]->Wait(pJobID);
 					break;
 				}
 				else if (id != 0)
@@ -174,9 +172,9 @@ namespace ks {
 
 			if (!found)
 			{
-				jobsPending = !(mQueuedJobs <= active_events || active_events == numWorkers);
+				jobsPending = !(queuedJobs == 0 || active_events == numWorkers);
 				if(jobsPending)
-					THREAD_SWITCH;
+					ksYieldThread;
 			}
 		}
 	}
