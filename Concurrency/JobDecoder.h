@@ -29,7 +29,7 @@ namespace ks {
 	{
 	public:
 		virtual ~IJobDecoder()									{}
-		virtual size_t operator ()(char* pFuncPtr) const = 0;
+		virtual uintptr_t operator ()(char* pFuncPtr) const = 0;
 		virtual void operator ()(char* pFuncPtr, const char* pArg) const = 0;
 		virtual void Create(char* pDest, const char* pSource) = 0;
 		virtual void Create(char* pFuncDest, const char* pFuncSource, char* pCompDest, const char* pCompSource) = 0;
@@ -48,7 +48,7 @@ namespace ks {
 			return &sInstance;
 		}
 
-		inline size_t operator ()(char* pFuncPtr) const override
+		inline uintptr_t operator ()(char* pFuncPtr) const override
 		{
 			_FN* func = (_FN*)(pFuncPtr);
 			return (*func)();
@@ -90,10 +90,10 @@ namespace ks {
 			return &sInstance;
 		}
 
-		inline size_t operator ()(char* pFuncPtr) const override
+		inline uintptr_t operator ()(char* pFuncPtr) const override
 		{
 			_FN* func = (_FN*)(pFuncPtr);
-			return (size_t)(*func)();
+			return (uintptr_t)(*func)();
 		}
 
 		inline void operator ()(char* pFuncPtr, const char* pArg) const override

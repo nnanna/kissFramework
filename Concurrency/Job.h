@@ -52,8 +52,8 @@ namespace ks {
 	//////////////////////////////////////////////////////////////////////////
 	class Job
 	{
-#define PROCESS_MAX_SIZE		10 * sizeof(size_t)
-#define COMPLETOR_MAX_SIZE		2 * sizeof(size_t)
+#define PROCESS_MAX_SIZE		10 * sizeof(uintptr_t)
+#define COMPLETOR_MAX_SIZE		2 * sizeof(uintptr_t)
 
 	public:
 
@@ -150,7 +150,7 @@ namespace ks {
 
 		void Execute()
 		{
-			size_t result		= 0;
+			uintptr_t result		= 0;
 			const ksU32 waitKey( JOB_SIG_ENCODE(JS_WAITING, mID) );
 			const ksU32 execKey( JOB_SIG_ENCODE(JS_RUNNING, mID) );
 			if( atomic_compare_and_swap( &mSignature, waitKey, execKey ) == waitKey )
@@ -232,7 +232,7 @@ namespace ks {
 		const Job*	mJob;
 		ksU32		mJobID;
 
-		bool validate( const Job* pJob ) const	{ return pJob && pJob->UID() == mJobID && mJobID != UIDGenerator::INVALID_UID; }
+		bool validate( const Job* pJob ) const	{ return pJob && pJob->UID() == mJobID && pJob->State() != JS_INVALID && mJobID != UIDGenerator::INVALID_UID; }
 	};
 	
 	
