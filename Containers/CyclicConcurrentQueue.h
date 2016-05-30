@@ -169,31 +169,32 @@ namespace ks
 		template<CCQMode mode, bool isPowerOfTwo>
 		T* const enqueue(T&& pItem)
 		{
-			ksU32 index(0), nextTail(0);
+			ksU32 index(0), nextTail(0), spin_count(0);
 			bool failed(true);
 			do
 			{
-				index = mWriteTail;
-				nextTail = next<isPowerOfTwo>(index);
+				conditional_yield(spin_count);
+				index		= mWriteTail;
+				nextTail	= next<isPowerOfTwo>(index);
+#if KSCQ_ENABLE_QUEUE_FULL_EXCEPTION
 			} while ((nextTail != mWriteHead) && (failed = fail_compare_swap<mode>(mWriteTail, index, nextTail)));
+#else
+			} while ((nextTail == mWriteHead) || (failed = fail_compare_swap<mode>(mWriteTail, index, nextTail)));
+#endif
 
 			if (!failed)
 			{
 				mItems[index] = ks::move(pItem);
 				//WRITE_BARRIER;
 
-				ksU32 timeout(0);
+				spin_count = 0;
 				// first test (mReadTail != index) to avoid a futile compare_swap call.
 				while ((mReadTail != index) || fail_compare_swap<mode>(mReadTail, index, nextTail))
 				{
-					// http://www.codeproject.com/Articles/184046/Spin-Lock-in-C
-					if (timeout++ < CONTEXT_SWITCH_LATENCY)
-						ksYieldProcessor;
-					else
-						ksYieldThread;
+					conditional_yield(spin_count);
 				}
 
-				return &mItems[index];
+				return mItems + index;
 			}
 			else
 			{
@@ -205,14 +206,14 @@ namespace ks
 		template<CCQMode mode, bool isPowerOfTwo>
 		void dequeue(queue_item& qitem)
 		{
-			ksU32 index(0), nextHead(0);
+			ksU32 index(0), nextHead(0), spin_count(0);
 			bool available(false);
 			do
 			{
 				index = mReadHead;
 				nextHead = next<isPowerOfTwo>(index);
 				available = !empty();
-			} while (available && ks::fail_compare_swap<mode>(mReadHead, index, nextHead));
+			} while (available && ks::fail_compare_swap<mode>(mReadHead, index, nextHead) && conditional_yield(spin_count));
 
 			qitem	= queue_item(ks::move(mItems[index]), available);
 
@@ -228,6 +229,19 @@ namespace ks
 			queue_item qitem;
 			dequeue<mode, isPowerOfTwo>(qitem);
 			return qitem;
+		}
+
+		inline bool conditional_yield(ksU32& spin_count)
+		{
+			// http://www.codeproject.com/Articles/184046/Spin-Lock-in-C
+			if (spin_count++)
+			{
+				if (spin_count < CONTEXT_SWITCH_LATENCY)
+					ksYieldProcessor;
+				else
+					ksYieldThread;
+			}
+			return true;	// only returns bool so it can be used as a condition on loop 'headers'
 		}
 
 		// 'technically wasteful' padding/alignment to eliminate false sharing.
