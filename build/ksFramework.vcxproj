@@ -23,6 +23,7 @@
     <ClCompile Include="..\Common\ErrorNotify.cpp" />
     <ClCompile Include="..\Concurrency\BitLock.cpp" />
     <ClCompile Include="..\Concurrency\Job.cpp" />
+    <ClCompile Include="..\Concurrency\JobGroup.cpp" />
     <ClCompile Include="..\Concurrency\JobScheduler.cpp" />
     <ClCompile Include="..\Concurrency\Mutex.cpp" />
     <ClCompile Include="..\Concurrency\ReadWriteLock.cpp" />
@@ -44,6 +45,7 @@
     <ClInclude Include="..\Common\ErrorNotify.h" />
     <ClInclude Include="..\Concurrency\atomics.h" />
     <ClInclude Include="..\Concurrency\BitLock.h" />
+    <ClInclude Include="..\Concurrency\JobGroup.h" />
     <ClInclude Include="..\Concurrency\JobScheduler.h" />
     <ClInclude Include="..\Concurrency\JobScheduler.hpp" />
     <ClInclude Include="..\Concurrency\Mutex.h" />
