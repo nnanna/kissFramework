@@ -1,7 +1,8 @@
 #ifndef DEBUG_H
 #define DEBUG_H
 
-#if defined _DEBUG
+
+#if KS_ENABLE_ASSERTS
 #define KS_ASSERT(expr)		\
    do {						\
       if (!( expr) )		\
@@ -10,6 +11,6 @@
 
 #else
 #define KS_ASSERT
-#endif	// _DEBUG
+#endif	// KS_ENABLE_ASSERTS
 
 #endif
