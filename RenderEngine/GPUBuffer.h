@@ -30,18 +30,17 @@ namespace ks {
 class GPUBuffer
 {
 public:
-	GPUBuffer(unsigned byte_size, GLenum target = GL_ARRAY_BUFFER, GLenum usage = GL_STATIC_DRAW, void* data = nullptr);
+	GPUBuffer(unsigned byte_size, GLenum target = GL_ARRAY_BUFFER, GLenum usage = GL_STATIC_DRAW, const void* data = nullptr);
     ~GPUBuffer();
 
     void bind();
     void unbind();
 
-	void *map(unsigned p_size, unsigned flags = GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+	void *map(unsigned byte_size, unsigned flags = GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
 
-	template<typename T>
-	T* map(unsigned pNumElements)
+	template<typename T> T* map(unsigned pNumElements)
 	{
-		return (T*)map(sizeof(T) * pNumElements, GL_MAP_WRITE_BIT );
+		return static_cast<T*>( map( sizeof(T) * pNumElements ) );
 	}
     
 	void unmap();
@@ -50,9 +49,9 @@ public:
 	unsigned capacity() const		{ return m_size; }
 
 	template<typename T>
-	static GPUBuffer* create(unsigned pNumElements, GLenum type, GLenum usage, void* data = nullptr)
+	static GPUBuffer* create(unsigned pNumElements, GLenum type, GLenum usage, const T* data = nullptr)
 	{
-		return new GPUBuffer(sizeof(T) * pNumElements, type, usage, data);
+		return new GPUBuffer(sizeof(T) * pNumElements, type, usage, (const void*)data);
 	}
 
 private:

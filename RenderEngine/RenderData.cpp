@@ -8,7 +8,7 @@ namespace ks {
 		: mVertexBuffer(pVertexBuffer)
 		, mIndexBuffer(pIndexBuffer)
 		, vertexSize(0)
-		, renderMode(0)
+		, renderMode(ePoints)
 		, stride(0)
 		, numIndices(0)
 		, normOffset(0)

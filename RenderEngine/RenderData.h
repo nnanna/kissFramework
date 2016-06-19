@@ -52,7 +52,7 @@ namespace ks
 
 		ks32			vertexSize;		// Specifies the number of coordinates per vertex. Must be 2, 3, or 4.
 
-		ks32			renderMode;
+		RENDERMODE		renderMode;
 
 		ks32			stride;
 

@@ -24,7 +24,7 @@
 
 namespace ks {
 
-GPUBuffer::GPUBuffer(unsigned size, GLenum target /*= GL_ARRAY_BUFFER*/, GLenum usage /*= GL_STATIC_DRAW*/, void* data /*= nullptr*/)
+GPUBuffer::GPUBuffer(unsigned size, GLenum target /*= GL_ARRAY_BUFFER*/, GLenum usage /*= GL_STATIC_DRAW*/, const void* data /*= nullptr*/)
 	: m_size(size)
 	, m_target(target)
 {
@@ -53,11 +53,11 @@ void GPUBuffer::unbind()
 	CHECK_GL_ERROR;
 }
 
-void *GPUBuffer::map(unsigned p_size, unsigned access /*= GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT*/)
+void *GPUBuffer::map(unsigned byte_size, unsigned access /*= GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT*/)
 {
-	KS_ASSERT( p_size <= m_size );
+	KS_ASSERT(byte_size <= m_size);
     bind();
-	return glMapBufferRange(m_target, 0, p_size, access);
+	return glMapBufferRange(m_target, 0, byte_size, access);
 }
 
 void GPUBuffer::unmap()

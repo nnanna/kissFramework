@@ -129,24 +129,19 @@ namespace ks {
 
 			uploadShaderConstants(mat, camPos, view, projection, rd->Transform);
 
-			const ksU32 vert_type	= GL_FLOAT;
-			const ksU32 ib_type		= GL_UNSIGNED_INT;
-			GPUBuffer* ib			= rd->mIndexBuffer;
-			int vert_size			= rd->vertexSize;
-			int stride				= rd->stride;
-			int num_indices			= rd->numIndices;
+			const int vert_size		= rd->vertexSize;
+			const int stride		= rd->stride;
 
 			if (rd->mVertexBuffer)
 			{
 				rd->mVertexBuffer->bind();
-				glVertexPointer(vert_size, vert_type, 0, 0);								// last param represents offset in this case
-				glVertexAttribPointer(SA_POSITION, vert_size, vert_type, GL_FALSE, 0, 0);	// these correspond to glBindAttribLocation()
+				glVertexPointer(vert_size, GL_FLOAT, stride, 0);								// last param represents offset in this case
+				glVertexAttribPointer(SA_POSITION, vert_size, GL_FLOAT, GL_FALSE, stride, 0);	// these correspond to glBindAttribLocation()
 			}
 			else
 			{
-				KS_ASSERT(0 && "unsupported");
-				//glVertexPointer(vert_size, vert_type, stride, vb);
-				//glVertexAttribPointer(SA_POSITION, vert_size, vert_type, GL_FALSE, stride, vb);
+				KS_ASSERT(0 && "invalid renderdata");
+				continue;
 			}
 			
 			if (rd->normOffset)
@@ -158,25 +153,28 @@ namespace ks {
 				glVertexAttribPointer(SA_NORMAL, vert_size, GET_GLTYPE(norms), GL_FALSE, stride, norms);
 			}
 
-			if (ib)
+			if (rd->mIndexBuffer)
 			{
+				GPUBuffer* ib = rd->mIndexBuffer;
 				ib->bind();
-				glDrawElements(rd->renderMode, num_indices, ib_type, 0);
+				glDrawElements(rd->renderMode, rd->numIndices, GL_UNSIGNED_SHORT, 0);
 				ib->unbind();
 			}
 			else
 			{
-				glDrawArrays(rd->renderMode, 0, num_indices);
+				glDrawArrays(rd->renderMode, 0, rd->numIndices);
 			}
 
 			mMRUShader = mat->ShaderContainer;
 
 			if (rd->mVertexBuffer)
 				rd->mVertexBuffer->unbind();
+
+			if (rd->normOffset)
+				glDisableClientState(GL_NORMAL_ARRAY);
 		}
 
 		glDisableClientState(GL_VERTEX_ARRAY);
-		glDisableClientState(GL_NORMAL_ARRAY);
 		if (mMRUShader)
 			mMRUShader->unbindProgram();
 
