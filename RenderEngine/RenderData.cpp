@@ -4,22 +4,22 @@
 
 namespace ks {
 
-	RenderData::RenderData(const ksU32* pIB, const Matrix& pTrans)
-		: vertexSize(0)
-		, indexBuffer(pIB)
+	RenderData::RenderData(GPUBuffer* pVertexBuffer, GPUBuffer* pIndexBuffer, const Matrix& pTrans)
+		: mVertexBuffer(pVertexBuffer)
+		, mIndexBuffer(pIndexBuffer)
+		, vertexSize(0)
 		, renderMode(0)
 		, stride(0)
 		, numIndices(0)
 		, normOffset(0)
 		, material(nullptr)
-		, mGPUBuffer(nullptr)
 		, Transform(pTrans)
 	{}
 
 
 	RenderData::~RenderData()
 	{
-		delete mGPUBuffer;
+		delete mVertexBuffer;
 	}
 
 }

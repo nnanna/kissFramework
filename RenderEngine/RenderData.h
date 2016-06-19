@@ -42,13 +42,15 @@ namespace ks
 	class RenderData
 	{
 	public:
-		RenderData(const ksU32* pIB, const Matrix& pTrans);
+		RenderData(GPUBuffer* pVertexBuffer, GPUBuffer* pIndexBuffer, const Matrix& pTrans);
 
 		~RenderData();
 
-		ks32			vertexSize;	/*Specifies the number of coordinates per vertex. Must be 2, 3, or 4.*/
+		GPUBuffer*		mVertexBuffer;	// TODO: replace with opaque VertexBuffer and IndexBuffer classes
 
-		const ksU32*	indexBuffer;
+		GPUBuffer*		mIndexBuffer;
+
+		ks32			vertexSize;		// Specifies the number of coordinates per vertex. Must be 2, 3, or 4.
 
 		ks32			renderMode;
 
@@ -59,8 +61,6 @@ namespace ks
 		ks32			normOffset;
 
 		Material*		material;
-
-		GPUBuffer*		mGPUBuffer;
 
 		const Matrix&	Transform;
 

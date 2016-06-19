@@ -130,14 +130,15 @@ namespace ks {
 			uploadShaderConstants(mat, camPos, view, projection, rd->Transform);
 
 			const ksU32 vert_type	= GL_FLOAT;
-			const ksU32* ib			= rd->indexBuffer;
+			const ksU32 ib_type		= GL_UNSIGNED_INT;
+			GPUBuffer* ib			= rd->mIndexBuffer;
 			int vert_size			= rd->vertexSize;
 			int stride				= rd->stride;
 			int num_indices			= rd->numIndices;
 
-			if (rd->mGPUBuffer)
+			if (rd->mVertexBuffer)
 			{
-				rd->mGPUBuffer->bind();
+				rd->mVertexBuffer->bind();
 				glVertexPointer(vert_size, vert_type, 0, 0);								// last param represents offset in this case
 				glVertexAttribPointer(SA_POSITION, vert_size, vert_type, GL_FALSE, 0, 0);	// these correspond to glBindAttribLocation()
 			}
@@ -150,7 +151,7 @@ namespace ks {
 			
 			if (rd->normOffset)
 			{
-				const float* norms	= (float*)nullptr + rd->normOffset;
+				const float* norms	= (float*)rd->normOffset;
 				glEnableClientState(GL_NORMAL_ARRAY);
 				glNormalPointer(GET_GLTYPE(norms), stride, norms);
 				glEnableVertexAttribArray(SA_NORMAL);
@@ -158,14 +159,20 @@ namespace ks {
 			}
 
 			if (ib)
-				glDrawElements(rd->renderMode, num_indices, GET_GLTYPE(ib), ib);
+			{
+				ib->bind();
+				glDrawElements(rd->renderMode, num_indices, ib_type, 0);
+				ib->unbind();
+			}
 			else
+			{
 				glDrawArrays(rd->renderMode, 0, num_indices);
+			}
 
 			mMRUShader = mat->ShaderContainer;
 
-			if (rd->mGPUBuffer)
-				rd->mGPUBuffer->unbind();
+			if (rd->mVertexBuffer)
+				rd->mVertexBuffer->unbind();
 		}
 
 		glDisableClientState(GL_VERTEX_ARRAY);
