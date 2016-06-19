@@ -33,8 +33,10 @@
     <ClCompile Include="..\Memory\ThreadStackAllocator.cpp" />
     <ClCompile Include="..\Reflection\TypeUID.cpp" />
     <ClCompile Include="..\RenderEngine\GLRenderer.cpp" />
+    <ClCompile Include="..\RenderEngine\GPUBuffer.cpp" />
     <ClCompile Include="..\RenderEngine\Light.cpp" />
     <ClCompile Include="..\RenderEngine\Material.cpp" />
+    <ClCompile Include="..\RenderEngine\RenderData.cpp" />
     <ClCompile Include="..\RenderEngine\RenderResourceFactory.cpp" />
     <ClCompile Include="..\RenderEngine\SimpleGLSLContainer.cpp" />
   </ItemGroup>
@@ -64,6 +66,7 @@
     <ClInclude Include="..\Reflection\Reflector.h" />
     <ClInclude Include="..\Reflection\TypeUID.h" />
     <ClInclude Include="..\RenderEngine\GLRenderer.h" />
+    <ClInclude Include="..\RenderEngine\GPUBuffer.h" />
     <ClInclude Include="..\RenderEngine\Light.h" />
     <ClInclude Include="..\RenderEngine\Material.h" />
     <ClInclude Include="..\RenderEngine\RenderData.h" />

@@ -11,6 +11,7 @@
 #include "GLRenderer.h"
 #include "Light.h"
 #include "RenderData.h"
+#include "GPUBuffer.h"
 #include "RenderResourceFactory.h"
 #include <Service.h>
 #include <RenderEngine\GL\glew.h>
@@ -67,8 +68,6 @@ namespace ks {
 	/*
 		This should be auto-called every frame
 		to prevent the buffers from growing infinitely
-		TODO: clearing and repopulating the render-list every frame is potentially expensive
-		Only remove items when necessary.
 		*/
 
 	void GLRenderer::flushRenderData()
@@ -130,34 +129,43 @@ namespace ks {
 
 			uploadShaderConstants(mat, camPos, view, projection, rd->Transform);
 
-			const float* vb = (const float*)rd->vertexBuffer;
-			const ksU32* ib = rd->indexBuffer;
-			int vert_size = rd->vertexSize;
-			int stride = rd->stride;
-			int num_indices = rd->numIndices;
-			const float* norms = vb + rd->normOffset;
+			const ksU32 vert_type	= GL_FLOAT;
+			const ksU32* ib			= rd->indexBuffer;
+			int vert_size			= rd->vertexSize;
+			int stride				= rd->stride;
+			int num_indices			= rd->numIndices;
 
-			glVertexPointer(vert_size, GET_GLTYPE(vb), stride, vb);
+			if (rd->mGPUBuffer)
+			{
+				rd->mGPUBuffer->bind();
+				glVertexPointer(vert_size, vert_type, 0, 0);								// last param represents offset in this case
+				glVertexAttribPointer(SA_POSITION, vert_size, vert_type, GL_FALSE, 0, 0);	// these correspond to glBindAttribLocation()
+			}
+			else
+			{
+				KS_ASSERT(0 && "unsupported");
+				//glVertexPointer(vert_size, vert_type, stride, vb);
+				//glVertexAttribPointer(SA_POSITION, vert_size, vert_type, GL_FALSE, stride, vb);
+			}
+			
 			if (rd->normOffset)
 			{
+				const float* norms	= (float*)nullptr + rd->normOffset;
 				glEnableClientState(GL_NORMAL_ARRAY);
 				glNormalPointer(GET_GLTYPE(norms), stride, norms);
-#ifdef TARGET_GL_SHADERS
 				glEnableVertexAttribArray(SA_NORMAL);
 				glVertexAttribPointer(SA_NORMAL, vert_size, GET_GLTYPE(norms), GL_FALSE, stride, norms);
-#endif
 			}
 
-#ifdef TARGET_GL_SHADERS
-			// these correspond to glBindAttribLocation()
-			glVertexAttribPointer(SA_POSITION, vert_size, GET_GLTYPE(vb), GL_FALSE, stride, vb);
-#endif
 			if (ib)
 				glDrawElements(rd->renderMode, num_indices, GET_GLTYPE(ib), ib);
 			else
 				glDrawArrays(rd->renderMode, 0, num_indices);
 
 			mMRUShader = mat->ShaderContainer;
+
+			if (rd->mGPUBuffer)
+				rd->mGPUBuffer->unbind();
 		}
 
 		glDisableClientState(GL_VERTEX_ARRAY);

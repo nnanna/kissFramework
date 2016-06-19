@@ -15,6 +15,7 @@
 namespace ks
 {
 	class Matrix;
+	class GPUBuffer;
 	struct Material;
 
 	/*
@@ -41,19 +42,9 @@ namespace ks
 	class RenderData
 	{
 	public:
-		RenderData(const void* pVB, const ksU32* pIB, const Matrix& pTrans)
-			: vertexBuffer(pVB)
-			, vertexSize(0)
-			, indexBuffer(pIB)
-			, renderMode(0)
-			, stride(0)
-			, numIndices(0)
-			, normOffset(0)
-			, material(nullptr)
-			, Transform(pTrans)
-		{}
+		RenderData(const ksU32* pIB, const Matrix& pTrans);
 
-		const void*		vertexBuffer;
+		~RenderData();
 
 		ks32			vertexSize;	/*Specifies the number of coordinates per vertex. Must be 2, 3, or 4.*/
 
@@ -68,6 +59,8 @@ namespace ks
 		ks32			normOffset;
 
 		Material*		material;
+
+		GPUBuffer*		mGPUBuffer;
 
 		const Matrix&	Transform;
 

@@ -130,7 +130,7 @@ namespace ks {
 				else if ( JGD_GET_ENDMARGIN_TAG(cond) )
 				{
 					ksU32 margin	= cond & ~JGD_ENDMARGIN_BIT;
-					passed			= margin >= mNumJobs;
+					passed			= margin >= mNumJobs;		// TODO: can falsely pass multiple conditions if they all evaluate mNumJobs before it's incremented in Add(). track with additional variable
 					++numFound;
 				}
 

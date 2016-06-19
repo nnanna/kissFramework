@@ -85,6 +85,12 @@
     <ClCompile Include="..\Concurrency\JobGroup.cpp">
       <Filter>Concurrency</Filter>
     </ClCompile>
+    <ClCompile Include="..\RenderEngine\GPUBuffer.cpp">
+      <Filter>RenderEngine</Filter>
+    </ClCompile>
+    <ClCompile Include="..\RenderEngine\RenderData.cpp">
+      <Filter>RenderEngine</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Common\Debug.h">
@@ -176,6 +182,9 @@
     </ClInclude>
     <ClInclude Include="..\Concurrency\JobGroup.h">
       <Filter>Concurrency</Filter>
+    </ClInclude>
+    <ClInclude Include="..\RenderEngine\GPUBuffer.h">
+      <Filter>RenderEngine</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
