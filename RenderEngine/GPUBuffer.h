@@ -36,7 +36,7 @@ public:
     void bind();
     void unbind();
 
-	void *map(unsigned byte_size, unsigned flags = GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
+	void *map(unsigned byte_size, unsigned flags = GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT );
 
 	template<typename T> T* map(unsigned pNumElements)
 	{
