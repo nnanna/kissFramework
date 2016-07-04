@@ -30,6 +30,7 @@
     <ClCompile Include="..\Concurrency\Semaphore.cpp" />
     <ClCompile Include="..\Maths\ks_Maths.cpp" />
     <ClCompile Include="..\Maths\Matrix4x4.cpp" />
+    <ClCompile Include="..\Memory\FrameAllocator.cpp" />
     <ClCompile Include="..\Memory\ThreadStackAllocator.cpp" />
     <ClCompile Include="..\Reflection\TypeUID.cpp" />
     <ClCompile Include="..\RenderEngine\GLRenderer.cpp" />
@@ -60,6 +61,7 @@
     <ClInclude Include="..\Maths\ks_Maths.h" />
     <ClInclude Include="..\Memory\DataPointer.h" />
     <ClInclude Include="..\Memory\DataPointer.hpp" />
+    <ClInclude Include="..\Memory\FrameAllocator.h" />
     <ClInclude Include="..\Memory\ThreadStackAllocator.h" />
     <ClInclude Include="..\Reflection\EnumReflector.h" />
     <ClInclude Include="..\Reflection\EnumString.h" />

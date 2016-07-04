@@ -91,6 +91,9 @@
     <ClCompile Include="..\RenderEngine\RenderData.cpp">
       <Filter>RenderEngine</Filter>
     </ClCompile>
+    <ClCompile Include="..\Memory\FrameAllocator.cpp">
+      <Filter>Memory</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Common\Debug.h">
@@ -185,6 +188,9 @@
     </ClInclude>
     <ClInclude Include="..\RenderEngine\GPUBuffer.h">
       <Filter>RenderEngine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Memory\FrameAllocator.h">
+      <Filter>Memory</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
