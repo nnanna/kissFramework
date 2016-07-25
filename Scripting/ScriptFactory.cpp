@@ -88,7 +88,8 @@ namespace ks{
 			if (creator)
 				script		= creator();
 
-			::FreeLibrary(hInstance);
+			//printf("loaded script %s", script->GetName());
+			::FreeLibrary(hInstance);			// TODO: defer
 		}
 		return script;
 	}
@@ -102,7 +103,7 @@ namespace ks{
 		bool success = false;
 
 		std::string cmd	= sVCVars;
-		cmd				+= " && cl /LD ";
+		cmd				+= " && cl /LD /Zl /EHsc /GR- ";
 		cmd				+= filename;
 		cmd				+= " /nologo";
 		
@@ -126,8 +127,9 @@ namespace ks{
 				char chBuf[512];
 				BOOL bSuccess = ReadFile(mProcessReadHandle, chBuf, 512, &dwRead, NULL);
 
-				if (bSuccess && dwRead < 512)
+				if (bSuccess)
 				{
+					dwRead	= dwRead < 512 ? dwRead : 511;
 					chBuf[dwRead] = '\0';
 					OutputDebugStringA(chBuf);
 				}

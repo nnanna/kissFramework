@@ -21,7 +21,7 @@
 
 namespace ks {
 
-	class ScriptInterface
+	class __declspec(novtable) ScriptInterface
 	{
 	public:
 		virtual void SetEnvironment(class ScriptEnvironment* si) = 0;
@@ -30,21 +30,5 @@ namespace ks {
 
 		virtual void Update(float pDelta) = 0;
 	};
-
-#define KS_SCRIPT_DEFAULT_MEMBERS			\
-	ScriptEnvironment*		mEnv;			\
-	void*					mDataContext;	\
-
-#define KS_SCRIPT_DEFAULT_METHODS																\
-	void SetEnvironment(ScriptEnvironment* pEnv) override	{ mEnv = pEnv; }					\
-	void SetDataContext(void* pDataContext) override		{ mDataContext = pDataContext; }	\
-
-
-#define KS_SCRIPT_EXPORT(Class)												\
-	extern "C" __declspec(dllexport) ScriptInterface* CreateScript()		\
-	{																		\
-		Class* instance = new Class;										\
-		return instance;													\
-	}																		\
 
 }
