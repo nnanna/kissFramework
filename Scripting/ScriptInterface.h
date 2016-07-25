@@ -26,7 +26,6 @@ namespace ks {
 	public:
 		virtual void SetEnvironment(class ScriptEnvironment* si) = 0;
 		virtual void SetDataContext(void* pDataContext) = 0;		// TODO: type-safety for data context. i.e use a ScriptData arg wrapper with intrinsic type validation.
-		virtual const char* GetName() const = 0;
 
 		virtual void Update(float pDelta) = 0;
 	};

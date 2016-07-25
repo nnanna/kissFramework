@@ -13,7 +13,9 @@
 #include "ScriptEnvironment.h"
 #include "Windows.h"
 
-#pragma comment(linker, "/entry:_DllMainCRTStartup") 
+#pragma comment(linker, "/entry:_DllMainCRTStartup")
+
+EXTERN_C int _fltused = 0;
 
 void * __cdecl operator new(unsigned int bytes)
 {

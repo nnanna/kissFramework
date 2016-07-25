@@ -37,8 +37,9 @@ namespace ks {
 	private:
 		bool compileScript(const char *filename);
 
-		class ScriptCollection*	sScripts;
+		class ScriptCollection*	mScripts;
 		void* mProcessReadHandle;
 		void* mProcessWriteHandle;
+		char sVCVars[128];
 	};
 }
