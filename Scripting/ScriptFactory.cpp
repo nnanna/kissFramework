@@ -92,7 +92,7 @@ namespace ks{
 		Array<ScriptKey>		mLoadedScripts;
 	};
 
-	ScriptFactory::ScriptFactory() : mProcessReadHandle(nullptr), mProcessWriteHandle(nullptr)
+	ScriptFactory::ScriptFactory(ScriptEnvironment* pEnv) : mEnv(pEnv), mProcessReadHandle(nullptr), mProcessWriteHandle(nullptr)
 	{
 		mScripts = new ScriptCollection();
 
@@ -116,13 +116,14 @@ namespace ks{
 		if (errCode == ERROR_SUCCESS)
 		{
 			sVCVars[0] = '"';
+			sVCVars[1] = '\0';
 			strcat_s(sVCVars, value);				//sVCVars += value;
-			strcat_s(sVCVars, "vcvarsall.bat");	//sVCVars += "vcvarsall.bat";
+			strcat_s(sVCVars, "vcvarsall.bat");		//sVCVars += "vcvarsall.bat";
 			strcat_s(sVCVars, "\"");
 #ifdef _WIN64
 			strcat_s(sVCVars, " amd64");			//sVCVars += " amd64";
 #else
-			strcat_s(sVCVars, " x86");			//sVCVars += " x86";
+			strcat_s(sVCVars, " x86");				//sVCVars += " x86";
 #endif
 		}
 	}
@@ -133,7 +134,7 @@ namespace ks{
 		::CloseHandle(mProcessReadHandle);
 	}
 
-	ScriptInterface* ScriptFactory::Load(const char* pName, bool pReload /*= false*/)
+	ScriptInterface* ScriptFactory::Load(const char* pName, ScriptDataContext pCtx, bool pReload /*= false*/)
 	{
 		const int index = mScripts->Find(pName);
 		if ( index >= 0)
@@ -160,6 +161,8 @@ namespace ks{
 
 			if (script)
 			{
+				ScriptAttributes rOutAttrib;
+				script->Initialise(mEnv, pCtx, rOutAttrib);
 				mScripts->Cache(pName, script, hInstance);
 			}
 		}
@@ -188,6 +191,7 @@ namespace ks{
 #else
 		cmd				+= " && cl /LD /MD /Zi /EHsc /GR- ";
 #endif
+		cmd				+= "/I \"..\\..\\kissFramework\" /I \"..\\..\\kissFramework\\Common\" ";
 		cmd				+= filename;
 		cmd				+= " /nologo";
 		

@@ -21,14 +21,17 @@
 namespace ks {
 
 	class ScriptInterface;
+	class ScriptEnvironment;
+
+	typedef void*	ScriptDataContext;
 
 	class ScriptFactory
 	{
 	public:
-		ScriptFactory();
+		ScriptFactory(ScriptEnvironment* pEnv);
 		~ScriptFactory();
 
-		ScriptInterface*	Load(const char* pName, bool pReload = false);
+		ScriptInterface*	Load(const char* pName, ScriptDataContext pCtx, bool pReload = false);
 
 		void				Unload(ScriptInterface*& pScript);
 		
@@ -37,6 +40,7 @@ namespace ks {
 	private:
 		bool compileScript(const char *filename);
 
+		ScriptEnvironment* mEnv;
 		class ScriptCollection*	mScripts;
 		void* mProcessReadHandle;
 		void* mProcessWriteHandle;

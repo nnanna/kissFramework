@@ -26,7 +26,7 @@ void __cdecl operator delete(void *ptr)
 {
 	//if (ptr) HeapFree(GetProcessHeap(), 0, ptr);
 }
-//extern "C" int __cdecl __purecall()
+//EXTERN_C int __cdecl __purecall()
 //{
 //	return 0;
 //}
@@ -38,19 +38,22 @@ inline void *__cdecl operator new(size_t, void *_Where)
 
 using namespace ks;
 
-
 #define KS_SCRIPT_DEFAULT_MEMBERS			\
 	ScriptEnvironment*		mEnv;			\
-	void*					mDataContext;	\
+	ScriptDataContext		mDataContext;	\
 
-#define KS_SCRIPT_DEFAULT_METHODS																\
-	void SetEnvironment(ScriptEnvironment* pEnv) override	{ mEnv = pEnv; }					\
-	void SetDataContext(void* pDataContext) override		{ mDataContext = pDataContext; }	\
+//#define STRINGIFY(x)		#x
+//#define KS_SCRIPT_IMPORT(x)	STRINGIFY( ..\..\..\kissFramework\\##x )
 
+#define KS_SCRIPT_BODY_INIT	void Initialise(ScriptEnvironment* pEnv, ScriptDataContext pDataContext, ScriptAttributes& rOutAttrib) override
+
+#define KS_SCRIPT_BODY_DESTROY	void Destroy() override
+
+#define KS_SCRIPT_BODY_UPDATE	void Update(float pDelta) override
 
 #define KS_SCRIPT_EXPORT(Class)												\
 	char sMem[sizeof(Class)];												\
-	extern "C" __declspec(dllexport) ScriptInterface* CreateScript()		\
+	EXTERN_C __declspec(dllexport) ScriptInterface* CreateScript()			\
 	{																		\
 		Class* instance = new(sMem) Class;									\
 		return instance;													\
