@@ -21,11 +21,28 @@
 
 namespace ks {
 
+	struct ScriptAttributes
+	{
+		ScriptAttributes() : is_threadsafe(false), update_frequency_ms(0), update_hierarchy(0)
+		{}
+
+		bool is_threadsafe;			// set if script can be updated in parallel to other scripts
+		short update_frequency_ms;	// minimum millisecond interval between updates
+		short update_hierarchy;		// order calls to Update() from lowest to highest
+	};
+
+	typedef void*	ScriptDataContext;
+
 	class __declspec(novtable) ScriptInterface
 	{
 	public:
-		virtual void SetEnvironment(class ScriptEnvironment* si) = 0;
-		virtual void SetDataContext(void* pDataContext) = 0;		// TODO: type-safety for data context. i.e use a ScriptData arg wrapper with intrinsic type validation.
+		// ScriptEnvironment - provide access to core app systems from script.
+		// ScriptDataContext - anonymous state communication between script and app client(s)
+		// ScriptAttributes - metadata for ScriptEngine, see ScriptAttributes struct
+		virtual void Initialise(class ScriptEnvironment* pEnv, ScriptDataContext pDataContext, ScriptAttributes& rOutAttrib) = 0;
+
+		// Free up any data created via ScriptEnvironment, or ScriptDataContext
+		virtual void Destroy() = 0;
 
 		virtual void Update(float pDelta) = 0;
 	};
