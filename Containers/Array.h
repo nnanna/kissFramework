@@ -495,7 +495,7 @@ namespace ks {
 		reference back() 				{ CHECK_OUT_OF_BOUNDS(_size - 1); return _begin[_size - 1];	}
 		const_reference back() const	{ CHECK_OUT_OF_BOUNDS(_size - 1); return _begin[_size - 1]; }
 
-		void pop_back()					{ CHECK_OUT_OF_BOUNDS(_size - 1); --_size; }
+		void pop_back()					{ CHECK_OUT_OF_BOUNDS(_size - 1); details::destroy<value_type>(_begin + --_size, 1, static_cast<TAllocator&>(*this)); }
 
 		void clear()					{ resize(0);}
 		void shrink_to_fit()			{ set_capacity(_size); }
