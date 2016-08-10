@@ -136,6 +136,15 @@ namespace ks{
 
 	ScriptInterface* ScriptFactory::Load(const char* pName, ScriptDataContext pCtx, bool pReload /*= false*/)
 	{
+		ksU32 version = 0;
+#if SHIPPING_BUILD
+		pReload		= false;
+#else
+		static ksU32 sVersion = 0;
+		if (pReload)
+			version		= ++sVersion;
+#endif
+
 		const int index = mScripts->Find(pName);
 		if ( index >= 0)
 		{
@@ -147,12 +156,12 @@ namespace ks{
 
 		typedef ScriptInterface*(*CreateScript)();
 		ScriptInterface* script = nullptr;
-		std::string fullpath = "Scripts\\";
-		fullpath += pName;
-		fullpath += ".cpp";
-		if( compileScript( fullpath.c_str() ) )
+		if( compileScript( pName, version ) )
 		{
-			fullpath		= pName;
+			std::string fullpath	= "modules\\";
+			fullpath		+= pName;
+			if (version)
+				fullpath	+= std::to_string(version);
 			fullpath		+= ".dll";
 			auto hInstance	= ::LoadLibraryA(fullpath.c_str());
 			auto creator	= (CreateScript)GetProcAddress(hInstance, "CreateScript");
@@ -181,19 +190,34 @@ namespace ks{
 	}
 
 
-	bool ScriptFactory::compileScript(const char *filename)
+	bool ScriptFactory::compileScript(const char *filename, ksU32 pVersion)
 	{
 		bool success = false;
-
+	
 		std::string cmd	= sVCVars;
-#if SHIPPING_BUILD || 1
-		cmd				+= " && cl /LD /MD /Zl /EHsc /GR- ";
+#if SHIPPING_BUILD
+		cmd				+= " && cl /LD /MD /Zl /EHsc /GR- /nologo ";
 #else
-		cmd				+= " && cl /LD /MD /Zi /EHsc /GR- ";
+		cmd				+= " && cl /LD /MD /Z7 /EHsc /GR- /nologo ";
 #endif
+
+		// include paths
 		cmd				+= "/I \"..\\..\\kissFramework\" /I \"..\\..\\kissFramework\\Common\" ";
+
+		cmd				+= "Scripts\\";
 		cmd				+= filename;
-		cmd				+= " /nologo";
+		cmd				+= ".cpp";
+
+		//output paths
+		if (pVersion)
+		{
+			std::string incrVer	= filename + std::to_string(pVersion);
+			cmd			+= " /Fomodules\\ /Femodules\\" + incrVer;		// apply versioning on output file as VC doesn't unload PDB files.
+		}
+		else
+		{
+			cmd			+= " /Fomodules\\ /Femodules\\";
+		}
 		
 		STARTUPINFOA si			= {};
 		PROCESS_INFORMATION pi	= {};

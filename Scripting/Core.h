@@ -14,6 +14,7 @@
 #include "Windows.h"
 
 #pragma comment(linker, "/entry:_DllMainCRTStartup")
+#pragma comment(linker, "/INCREMENTAL:NO")
 
 EXTERN_C int _fltused = 0;
 
@@ -46,6 +47,8 @@ using namespace ks;
 //#define KS_SCRIPT_IMPORT(x)	STRINGIFY( ..\..\..\kissFramework\\##x )
 
 #define KS_SCRIPT_BODY_INIT	void Initialise(ScriptEnvironment* pEnv, ScriptDataContext pDataContext, ScriptAttributes& rOutAttrib) override
+
+#define KS_SCRIPT_INIT_INTERNAL	mDataContext = pDataContext; mEnv = pEnv
 
 #define KS_SCRIPT_BODY_DESTROY	void Destroy() override
 

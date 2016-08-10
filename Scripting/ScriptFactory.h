@@ -38,7 +38,7 @@ namespace ks {
 		void UpdateScripts(float pDelta);
 
 	private:
-		bool compileScript(const char *filename);
+		bool compileScript(const char *filename, ksU32 pVersion);
 
 		ScriptEnvironment* mEnv;
 		class ScriptCollection*	mScripts;
