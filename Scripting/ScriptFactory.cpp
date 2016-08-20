@@ -92,7 +92,7 @@ namespace ks{
 		Array<ScriptKey>		mLoadedScripts;
 	};
 
-	ScriptFactory::ScriptFactory(ScriptEnvironment* pEnv) : mEnv(pEnv), mProcessReadHandle(nullptr), mProcessWriteHandle(nullptr)
+	ScriptFactory::ScriptFactory(ScriptEnvironment* pEnv) : mEnv(pEnv), mProcessReadHandle(nullptr), mProcessWriteHandle(nullptr), mVersioning(0)
 	{
 		mScripts = new ScriptCollection();
 
@@ -140,9 +140,9 @@ namespace ks{
 #if SHIPPING_BUILD
 		pReload		= false;
 #else
-		static ksU32 sVersion = 0;
-		if (pReload)
-			version		= ++sVersion;
+		static volatile bool FORCE_GENERATE_DEBUG_LIBS(false);
+		if (pReload & FORCE_GENERATE_DEBUG_LIBS)
+			version		= ++mVersioning;
 #endif
 
 		const int index = mScripts->Find(pName);
@@ -193,16 +193,24 @@ namespace ks{
 	bool ScriptFactory::compileScript(const char *filename, ksU32 pVersion)
 	{
 		bool success = false;
-	
-		std::string cmd	= sVCVars;
-#if SHIPPING_BUILD
-		cmd				+= " && cl /LD /MD /Zl /EHsc /GR- /nologo ";
-#else
-		cmd				+= " && cl /LD /MD /Z7 /EHsc /GR- /nologo ";
+		std::string cmd;
+		cmd.reserve(512);
+		cmd				= sVCVars;
+		cmd				+= " && cl /LD /MD /EHsc /GR- /nologo ";
+		if (pVersion)
+		{
+#if !SHIPPING_BUILD
+			cmd			+= "/Z7 ";	// emit a .pdb debug file
 #endif
+		}
 
 		// include paths
-		cmd				+= "/I \"..\\..\\kissFramework\" /I \"..\\..\\kissFramework\\Common\" ";
+		cmd				+= "/I \"..\\..\\kissFramework\" /I \"..\\..\\kissFramework\\Common\" /I \"..\\..\\kissFramework\\Containers\" ";
+
+		// preprocessor defines
+#if _DEBUG
+		cmd				+= "/DDEBUG_VERSION /D_DEBUG ";
+#endif
 
 		cmd				+= "Scripts\\";
 		cmd				+= filename;
@@ -217,6 +225,20 @@ namespace ks{
 		else
 		{
 			cmd			+= " /Fomodules\\ /Femodules\\";
+		}
+
+		// cleanup intermediate files
+		{
+			std::string removefiles = " && del .\\modules\\";
+			removefiles				+= filename;
+
+			cmd						+= removefiles + "*.obj";
+			cmd						+= removefiles + "*.lib";
+			cmd						+= removefiles + "*.exp";
+			if (!pVersion)
+			{
+				cmd					+= removefiles + "*.pdb";	// won't delete access locked files anyway
+			}
 		}
 		
 		STARTUPINFOA si			= {};
@@ -235,13 +257,14 @@ namespace ks{
 			::CloseHandle(pi.hProcess);
 			if (exit_code != 0)
 			{
+#define	ERROR_BUF_SIZE	1024
 				DWORD dwRead;
-				char chBuf[512];
-				BOOL bSuccess = ReadFile(mProcessReadHandle, chBuf, 512, &dwRead, NULL);
+				char chBuf[ERROR_BUF_SIZE];
+				BOOL bSuccess = ReadFile(mProcessReadHandle, chBuf, ERROR_BUF_SIZE, &dwRead, NULL);
 
 				if (bSuccess)
 				{
-					dwRead	= dwRead < 512 ? dwRead : 511;
+					dwRead = dwRead < ERROR_BUF_SIZE ? dwRead : (ERROR_BUF_SIZE - 1);
 					chBuf[dwRead] = '\0';
 					OutputDebugStringA(chBuf);
 				}

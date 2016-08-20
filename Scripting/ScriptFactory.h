@@ -45,5 +45,6 @@ namespace ks {
 		void* mProcessReadHandle;
 		void* mProcessWriteHandle;
 		char sVCVars[128];
+		unsigned mVersioning;
 	};
 }
