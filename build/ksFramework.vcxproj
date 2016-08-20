@@ -40,6 +40,9 @@
     <ClCompile Include="..\RenderEngine\RenderData.cpp" />
     <ClCompile Include="..\RenderEngine\RenderResourceFactory.cpp" />
     <ClCompile Include="..\RenderEngine\SimpleGLSLContainer.cpp" />
+    <ClCompile Include="..\Scene\tiny_obj_loader.cc" />
+    <ClCompile Include="..\Scripting\ScriptEnvironment.cpp" />
+    <ClCompile Include="..\Scripting\ScriptFactory.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Common\crc32.h" />
@@ -74,6 +77,11 @@
     <ClInclude Include="..\RenderEngine\RenderData.h" />
     <ClInclude Include="..\RenderEngine\RenderResourceFactory.h" />
     <ClInclude Include="..\RenderEngine\SimpleShaderContainer.h" />
+    <ClInclude Include="..\Scene\tiny_obj_loader.h" />
+    <ClInclude Include="..\Scripting\Core.h" />
+    <ClInclude Include="..\Scripting\ScriptEnvironment.h" />
+    <ClInclude Include="..\Scripting\ScriptFactory.h" />
+    <ClInclude Include="..\Scripting\ScriptInterface.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Maths\ks_Maths.inl" />

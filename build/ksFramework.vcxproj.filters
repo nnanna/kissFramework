@@ -29,6 +29,9 @@
     <Filter Include="RenderEngine">
       <UniqueIdentifier>{d3770f95-2129-4d6a-8c61-43c4a20a6db7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Scene">
+      <UniqueIdentifier>{bde89d53-df55-4f83-9541-a2f3fc9f9df7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Reflection\TypeUID.cpp">
@@ -93,6 +96,15 @@
     </ClCompile>
     <ClCompile Include="..\Memory\FrameAllocator.cpp">
       <Filter>Memory</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Scene\tiny_obj_loader.cc">
+      <Filter>Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Scripting\ScriptEnvironment.cpp">
+      <Filter>Scripting</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Scripting\ScriptFactory.cpp">
+      <Filter>Scripting</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -191,6 +203,21 @@
     </ClInclude>
     <ClInclude Include="..\Memory\FrameAllocator.h">
       <Filter>Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Scene\tiny_obj_loader.h">
+      <Filter>Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Scripting\ScriptInterface.h">
+      <Filter>Scripting</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Scripting\Core.h">
+      <Filter>Scripting</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Scripting\ScriptEnvironment.h">
+      <Filter>Scripting</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Scripting\ScriptFactory.h">
+      <Filter>Scripting</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
