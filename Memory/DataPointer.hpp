@@ -17,6 +17,8 @@
 //////////////////////////////////////////////////////////////////////////
 
 #include "DataPointer.h"
+#include <Debug.h>
+#include <Containers\Array.h>
 #include <Reflection\TypeUID.h>
 
 namespace ks {
