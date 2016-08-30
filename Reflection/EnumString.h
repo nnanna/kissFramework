@@ -33,10 +33,10 @@ namespace ks {
 		static const char* get();
 	};
 
-#define EXPORTENUMSTRING(EID)							\
-	template<> template<>								\
+#define EXPORTENUMSTRING(EID)								\
+	template<> template<>									\
 	const char* ks::EnumString<decltype(EID)>::get<EID>()	\
-		{ return #EID; }									\
+	{ return #EID; }										\
 
 
 	template<ks32 FROM>
@@ -47,12 +47,11 @@ namespace ks {
 	};
 
 #define BEGINENUMSTRING(ETYPE, EID)							\
-	DECLARE_TYPENAME(ETYPE)									\
 	EXPORTENUMSTRING(EID)									\
 template<> template<>										\
 inline const char* ks::EnumLoop<EID-1>::get(decltype(EID) pID)	\
 	{															\
-	return "MINIMUS_EXTREMUS";								\
+		return "MINIMUS_EXTREMUS";								\
 	}															\
 
 #define FINISHENUMSTRING(EID)								\
@@ -60,7 +59,7 @@ inline const char* ks::EnumLoop<EID-1>::get(decltype(EID) pID)	\
 template<> template<>										\
 inline const char* ks::EnumLoop<EID+1>::get(decltype(EID) pID)	\
 	{															\
-	return "MAXIMUS_EXTREMUS";								\
+		return "MAXIMUS_EXTREMUS";								\
 	}															\
 
 	template<typename ENUMTYPE> template<ks32 ENUMID>

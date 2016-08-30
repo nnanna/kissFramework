@@ -1,9 +1,9 @@
-/////////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////////
 ///
 /// Copyright (c)
-///	@author		Nnanna Kama (2014)
-///	@about		Templated auto-generation of typeid and specialisable typenames
-///	@references	article "Making your own type id is fun" by Alex Darby
+///	@author		Nnanna Kama
+///	@date		29/08/2016
 ///
 ///
 /// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
@@ -17,39 +17,57 @@
 /// WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //////////////////////////////////////////////////////////////////////////
 
+#include <stdint.h>
 
-#include "TypeUID.h"
-#include <Debug.h>
-#include <Concurrency/atomics.h>
+namespace ks {
 
-namespace ks	{
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Beware: may incur excessive runtime allocations with types larger than 32bits. Prefer move semantics
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	const unsigned UIDGenerator::INVALID_UID = 0;
-	const unsigned DEFAULT_UID				= UIDGenerator::INVALID_UID + 1;
-
-	UIDGenerator::UIDGenerator() : mMarker(DEFAULT_UID)
-	{}
-
-	unsigned UIDGenerator::Get(const unsigned mask /*= 0xffffffff*/)
+	template <typename T>
+	struct ref_wrap
 	{
-		unsigned result(INVALID_UID);
-		do
-		{
-			result = mMarker++ & mask;
-		} while (result == INVALID_UID);
+		ref_wrap(T& ref) : m_ref(ref)
+		{}
+		T& get()	{ return m_ref; }
+	private:
+		T& m_ref;
+	};
 
-		return result;
-	}
+	template<typename T>
+	ref_wrap<T> ref(T& o)	{ return ref_wrap<T>(o); }
 
-	unsigned UIDGenerator::GetAsync(const unsigned mask /*= 0xffffffff*/)
+	class DataProperty
 	{
-		unsigned result(INVALID_UID);
-		do
-		{
-			result = (atomic_increment(&mMarker) - 1) & mask;
-		} while (result == INVALID_UID);
+	public:
+		template<typename T>
+		DataProperty(T& p_data);
 
-		return result;
-	}
+		template<typename T>
+		DataProperty(ref_wrap<T>& p_data);
+
+		void operator=(const DataProperty& o);
+		void operator=(DataProperty&& o);
+
+		~DataProperty();
+
+		template<typename T>
+		operator T&();
+
+		template<typename T>
+		T& As();
+
+		template<typename T>
+		bool IsCompatible() const;
+
+	private:
+		uintptr_t				m_data;
+		uint16_t				m_size;
+		struct ITypeStorage*	m_typeid;
+
+		void		destroy();
+	};
+
 
 }

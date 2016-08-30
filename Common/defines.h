@@ -74,6 +74,15 @@ namespace ks {
 	template<typename T> struct strip_qualifiers<const T&>	{ typedef T Type; };
 	template<typename T> struct strip_qualifiers<const T*>	{ typedef T* Type; };
 
+
+	template<typename T> struct bare_type			{ typedef T Type; };
+	template<typename T> struct bare_type<T&>		{ typedef T Type; };
+	template<typename T> struct bare_type<T*>		{ typedef T Type; };
+	template<typename T> struct bare_type<const T>	{ typedef T Type; };
+	template<typename T> struct bare_type<const T&>	{ typedef T Type; };
+	template<typename T> struct bare_type<const T*>	{ typedef T Type; };
+	template<typename T> struct bare_type<const T**>{ typedef T Type; };
+
 }
 
 

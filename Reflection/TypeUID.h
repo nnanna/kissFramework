@@ -17,50 +17,83 @@
 /// WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //////////////////////////////////////////////////////////////////////////
 
+
 #ifndef TYPE_UID_H
 #define TYPE_UID_H
 
-#include <defines.h>
-
 
 namespace ks {
-
+	
 
 	template<typename T>
 	struct TypeUID
 	{
-		static ksType		TypeID();
+		static unsigned		TypeID();
 		static const char*	Typename();
 	};
 
-	template<typename T>
-	inline ksType TypeUID<T>::TypeID()					{ static char mID; return ksType(&mID); }
 
+	static void extract_classname_range(const char* fname, unsigned& begin, unsigned& end)
+	{
+		unsigned reentrants(0);
+		begin = end = 0;
+		const char* itr = fname;
+		while (*itr != '\0' && end == 0)
+		{
+			if (*itr == '<')
+			{
+				if (begin == 0)
+					begin = (itr - fname) + 1;
+				else
+					++reentrants;
+			}
 
-	template<>
-	inline const char* TypeUID<int>::Typename()			{ return "int"; }
-
-	template<>
-	inline const char* TypeUID<bool>::Typename()		{ return "bool"; }
-
-	template<>
-	inline const char* TypeUID<float>::Typename()		{ return "float"; }
+			if (*itr == '>' && reentrants-- == 0)
+			{
+				end = itr - fname;
+			}
+			++itr;
+		}
+	}
 
 	template<typename T>
 	inline const char* TypeUID<T>::Typename()
 	{
-		static char tName[MAX_NAME] = { 0 };
+#define MAX_TYPENAME 127
+		static char tName[MAX_TYPENAME + 1] = { 0 };
 		if (tName[0] == 0)
-			sprintf_s(tName, MAX_NAME, "%08x", TypeID());
+		{
+			unsigned begin, end;
+			const char* fname = __FUNCTION__;
+			extract_classname_range(fname, begin, end);
+
+			unsigned size = end - begin;
+			if (size > MAX_TYPENAME)
+				size = MAX_TYPENAME;
+			memcpy(tName, fname + begin, size);
+		}
 
 		return tName;
 	}
 
-
-#define DECLARE_TYPENAME(TType)						\
-template<>											\
-inline const char* ks::TypeUID<TType>::Typename()	\
-	{ return #TType; }								\
+	template<typename T>
+	inline unsigned TypeUID<T>::TypeID()
+	{
+#define FNV_PRIME1	2166136261
+#define FNV_PRIME2	16777619
+		static unsigned sUID(FNV_PRIME1);
+		if (sUID == FNV_PRIME1)
+		{
+			const char* name = Typename();
+			const char* itr = name;
+			while (*itr != '\0')
+			{
+				sUID = (sUID ^ *itr) * FNV_PRIME2;
+				++itr;
+			}
+		}
+		return sUID;
+	}
 
 
 
@@ -68,14 +101,13 @@ inline const char* ks::TypeUID<TType>::Typename()	\
 	{
 		UIDGenerator();
 
+		unsigned Get(const unsigned mask = 0xfffffff);		// masking allows indirect support of UIDs that are less than 32bit
+		unsigned GetAsync(const unsigned mask = 0xffffffff);
 
-		u32 Get(const u32 mask = 0xfffffff);		// masking allows indirect support of UIDs that are less than 32bit
-		u32 GetAsync(const u32 mask = 0xffffffff);
-
-		static const u32 INVALID_UID;
+		static const unsigned INVALID_UID;
 
 	private:
-		volatile u32 mMarker;
+		volatile unsigned mMarker;
 	};
 
 
@@ -83,8 +115,8 @@ inline const char* ks::TypeUID<TType>::Typename()	\
 	class InstanceUIDGenerator
 	{
 	public:
-		static u32 Get(const u32 mask = 0xffffffff)			{ return mGenerator.Get(mask); }
-		static u32 GetAsync(const u32 mask = 0xffffffff)	{ return mGenerator.GetAsync(mask); }
+		static unsigned Get(const unsigned mask = 0xffffffff)			{ return mGenerator.Get(mask); }
+		static unsigned GetAsync(const unsigned mask = 0xffffffff)		{ return mGenerator.GetAsync(mask); }
 
 	protected:
 		static UIDGenerator	mGenerator;

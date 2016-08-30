@@ -68,6 +68,8 @@
     <ClInclude Include="..\Memory\ThreadStackAllocator.h" />
     <ClInclude Include="..\Reflection\EnumReflector.h" />
     <ClInclude Include="..\Reflection\EnumString.h" />
+    <ClInclude Include="..\Reflection\DataProperty.h" />
+    <ClInclude Include="..\Reflection\DataProperty.hpp" />
     <ClInclude Include="..\Reflection\Reflector.h" />
     <ClInclude Include="..\Reflection\TypeUID.h" />
     <ClInclude Include="..\RenderEngine\GLRenderer.h" />

@@ -219,6 +219,12 @@
     <ClInclude Include="..\Scripting\ScriptFactory.h">
       <Filter>Scripting</Filter>
     </ClInclude>
+    <ClInclude Include="..\Reflection\DataProperty.h">
+      <Filter>Reflection</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Reflection\DataProperty.hpp">
+      <Filter>Reflection</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Maths\ks_Maths.inl">

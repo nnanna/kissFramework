@@ -24,6 +24,7 @@
 #define KS_JOB_H
 
 #include "atomics.h"
+#include <defines.h>
 #include "JobDecoder.h"
 #include <Reflection/TypeUID.h>
 
