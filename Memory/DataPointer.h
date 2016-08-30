@@ -19,9 +19,7 @@
 #ifndef DATA_POINTER_H
 #define DATA_POINTER_H
 
-#include <Debug.h>
 #include <defines.h>
-#include <Containers\Array.h>
 
 namespace ks {
 
