@@ -20,6 +20,7 @@
 #include <Concurrency\JobScheduler.h>
 #include <Concurrency\Semaphore.h>
 #include <Containers\CyclicConcurrentQueue.h>
+#include <Profiling\Trace.h>
 #include <thread>
 
 namespace ks {
@@ -85,7 +86,9 @@ namespace ks {
 					jsevent->Start(job->UID());
 					atomic_decrement(&context->mQueuedJobs);
 
+					TRACE_BEGIN(job->Name(), jex);
 					job->Execute();
+					TRACE_END(jex);
 
 					jsevent->Stop();
 				}

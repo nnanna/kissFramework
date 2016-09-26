@@ -32,6 +32,7 @@
     <ClCompile Include="..\Maths\Matrix4x4.cpp" />
     <ClCompile Include="..\Memory\FrameAllocator.cpp" />
     <ClCompile Include="..\Memory\ThreadStackAllocator.cpp" />
+    <ClCompile Include="..\Profiling\Trace.cpp" />
     <ClCompile Include="..\Reflection\TypeUID.cpp" />
     <ClCompile Include="..\RenderEngine\GLRenderer.cpp" />
     <ClCompile Include="..\RenderEngine\GPUBuffer.cpp" />
@@ -66,6 +67,7 @@
     <ClInclude Include="..\Memory\DataPointer.hpp" />
     <ClInclude Include="..\Memory\FrameAllocator.h" />
     <ClInclude Include="..\Memory\ThreadStackAllocator.h" />
+    <ClInclude Include="..\Profiling\Trace.h" />
     <ClInclude Include="..\Reflection\EnumReflector.h" />
     <ClInclude Include="..\Reflection\EnumString.h" />
     <ClInclude Include="..\Reflection\DataProperty.h" />
