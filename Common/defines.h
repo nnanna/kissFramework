@@ -48,6 +48,9 @@ typedef const f32		constf32;
 typedef unsigned short	ksUShort;
 typedef short			ksShort;
 typedef char			ksByte;
+typedef __int16			ks16;
+typedef unsigned __int16 ksU16;
+typedef unsigned __int16 u16;
 
 #if _DEBUG
 	#define if_ks_dbg	if
@@ -68,6 +71,9 @@ namespace ks {
 	typename strip_ref<T>::type&& move(T&& arg)		{ return static_cast<typename strip_ref<T>::type&&>(arg); }
 
 
+	//////////////////////////////////////////////////////////////////////////
+	// removes constness, pointers or ref qualifiers, so we just get the plain Type
+	//////////////////////////////////////////////////////////////////////////
 	template<typename T> struct strip_qualifiers			{ typedef T Type; };
 	template<typename T> struct strip_qualifiers<T&>		{ typedef T Type; };
 	template<typename T> struct strip_qualifiers<const T>	{ typedef T Type; };

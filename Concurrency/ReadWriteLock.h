@@ -72,11 +72,10 @@ namespace ks {
 		void		Release(WriteGuard&);
 		void		Release(ReadGuard&);
 
-		u32			mMutualExclusivityMask;
-		char		pad0[CACHE_LINE_SIZE - sizeof(u32)];
-		ThreadID	mWritingThread;
-		char		pad1[CACHE_LINE_SIZE - sizeof(ThreadID)];
-		int			mReentrancyCount;
+		u32					mMutualExclusivityMask;
+		ThreadID			mWritingThread;
+		int					mReentrancyCount;
+		uintptr_t			mEvent;
 	};
 
 }

@@ -28,7 +28,7 @@ namespace ks {
 #define JG_COND_AVAIL			0x0f0f0f0f
 #define JG_COND_LOCK			0x0f000000
 #define JG_COND_MASK			0xff000000						// the first 8 bits of mDeferredConditions is reserved for tagging & locking
-#define JGI_TO_RANGE(x)			(x) = (x) & mCapacityMinusOne
+#define JGI_TO_RANGE(x)			(x) &= mCapacityMinusOne
 #define JGI_DEFERRED_TAG(x)		(x) | (1 << 31)
 #define JGI_GET_DEFERRED_TAG(x) ( (x) & (1 << 31) )
 

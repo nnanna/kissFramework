@@ -156,8 +156,7 @@ namespace ks {
 		bool found(false), jobsPending(true);
 		while (found == false && jobsPending)
 		{
-			const ksU32 queuedJobs(mQueuedJobs);	// this operation absotutely musn't be re-ordered
-			WRITE_BARRIER;
+			const ksU32 queuedJobs = atomic_or(&mQueuedJobs, 0);	// atomic read cos it absoTutely musn't be re-ordered
 			ksU32 active_events(0);
 			for (ksU32 i = 0; i < numWorkers; ++i)
 			{
@@ -175,7 +174,7 @@ namespace ks {
 
 			if (!found)
 			{
-				jobsPending = !(queuedJobs == 0 || active_events == numWorkers);
+				jobsPending = (queuedJobs != 0) || (active_events && active_events != numWorkers);
 				if(jobsPending)
 					ksYieldThread;
 			}
