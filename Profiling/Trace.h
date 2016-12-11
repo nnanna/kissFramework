@@ -75,7 +75,9 @@ namespace ks {
 	};
 }
 
+#define KSTR_ENABLE_TRACING		0
 
+#if KSTR_ENABLE_TRACING
 
 #define TOKENCONCAT0(x, y)				x ## y
 #define TOKENCONCAT(x, y)				TOKENCONCAT0(x, y)
@@ -85,3 +87,12 @@ namespace ks {
 
 #define TRACE_BEGIN(tag, trace_id)		ks::tracemarker trace_id(tag)
 #define TRACE_END(trace_id)				trace_id.onClose()
+
+#else
+
+#define TRACE_SCOPE(tag)
+#define TRACE_FUNC()
+#define TRACE_BEGIN(tag, trace_id)
+#define TRACE_END(trace_id)
+
+#endif

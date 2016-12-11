@@ -124,7 +124,9 @@ namespace ks {
 
 	void TraceAPI::Start()
 	{
+#if KSTR_ENABLE_TRACING
 		gTracingEnabled = true;
+#endif
 	}
 
 	void TraceAPI::Stop(bool asyncWriteToFile /*= true*/)
