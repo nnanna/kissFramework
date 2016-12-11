@@ -16,10 +16,13 @@
 /// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 /// WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //////////////////////////////////////////////////////////////////////////
+#ifndef DATAPROPERTY_HPP
+#define DATAPROPERTY_HPP
 
 #include "DataProperty.h"
 #include "TypeUID.h"
 #include <type_traits>
+#include <string>
 #include <Debug.h>
 
 namespace ks {
@@ -29,15 +32,14 @@ namespace ks {
 		template <typename T = void>	using if_pointer_t = typename std::enable_if< std::is_pointer<T>::value, T>::type;
 		template <typename T = void>	using if_value_t = typename std::enable_if< !std::is_pointer<T>::value, T>::type;
 
-		template<typename T> void construct(uintptr_t& dest, unsigned& dest_size, T& p_data);
+		template<typename T> void construct(uintptr_t& dest, T& p_data);
 
-		template<typename T> void construct(uintptr_t& dest, unsigned& dest_size, if_pointer_t<T>& p_data)
+		template<typename T> void construct(uintptr_t& dest, if_pointer_t<T>& p_data)
 		{
 			dest = (uintptr_t)p_data;
-			dest_size = 0;				// make pointers zero-sized mainly for identification/type checking
 		}
 
-		template<typename T> void construct(uintptr_t& dest, uint16_t& dest_size, if_value_t<T>& p_data)
+		template<typename T> void construct(uintptr_t& dest, if_value_t<T>& p_data)
 		{
 			const unsigned size = sizeof(p_data);
 			if (size > sizeof(uintptr_t))
@@ -50,10 +52,9 @@ namespace ks {
 			{
 				(T&)dest = p_data;
 			}
-			dest_size = size;
 		}
 
-		void copy_construct(uintptr_t& dest, uint16_t& dest_size, const uintptr_t& p_source, uint16_t size)
+		void copy_construct(uintptr_t& dest, const uintptr_t& p_source, unsigned size)
 		{
 			if (size > sizeof(uintptr_t))
 			{
@@ -64,7 +65,6 @@ namespace ks {
 			{
 				dest = p_source;
 			}
-			dest_size = size;
 		}
 
 	}
@@ -75,60 +75,58 @@ namespace ks {
 	struct ITypeStorage
 	{
 		virtual unsigned TypeID() const = 0;
+		virtual unsigned BareTypeID() const = 0;
+		virtual unsigned Size() const = 0;
+		virtual bool IsPointer() const = 0;
+		virtual bool IsNumeric() const = 0;
+		virtual bool IsFloat() const = 0;
 	};
 
 	template<typename T>
 	struct TypeStorage : public ITypeStorage
 	{
-		unsigned TypeID() const override { return TypeUID<T>::TypeID(); }
+		unsigned BareTypeID() const override	{ typedef typename bare_type<T>::Type BareType; return TypeUID<BareType>::TypeID(); }
+		unsigned TypeID() const override		{ return TypeUID<T>::TypeID(); }
+		unsigned Size() const override			{ return sizeof(T); }
+		bool IsPointer() const override			{ return std::is_pointer<T>::value; }
+		bool IsNumeric() const override			{ return std::_Is_numeric<T>::value; }
+		bool IsFloat() const override			{ return std::_Is_floating_point<T>::value; }
 	};
 
 	template<typename T>
 	ITypeStorage* getTypeStorage()
 	{
-		typedef typename bare_type<T>::Type	BareType;
-		static TypeStorage< BareType > sTypeStore;
+		typedef typename strip_qualifiers<T>::Type	UQType;
+		static TypeStorage<UQType> sTypeStore;
 		return &sTypeStore;
 	}
 
-
 	template<typename T>
-	DataProperty::DataProperty(T& p_data) : m_data(0), m_size(0)
+	DataProperty::DataProperty(T p_data) : m_data(0)
 	{
-		proputil::construct<T>(m_data, m_size, p_data);
-		m_typeid = getTypeStorage<T>();
+		proputil::construct<T>(m_data, p_data);
+		m_traits = getTypeStorage<T>();
 	}
 
 	template<typename T>
-	DataProperty::DataProperty(ref_wrap<T>& p_data) : m_data(0), m_size(0)
+	DataProperty::DataProperty(T& p_data) : m_data(0)
 	{
-		proputil::copy_construct(m_data, m_size, (const uintptr_t)&p_data.get(), sizeof(T*));	// store as pointer and tag appropriately
-		m_size = 0;
-		m_typeid = getTypeStorage<T>();
+		proputil::construct<T>(m_data, p_data);
+		m_traits = getTypeStorage<T>();
+	}
+
+	template<typename T>
+	DataProperty::DataProperty(ref_wrap<T> p_data) : m_data(0)
+	{
+		proputil::copy_construct(m_data, (const uintptr_t)&p_data.get(), sizeof(T*));	// store as pointer and tag appropriately
+		m_traits = getTypeStorage<T*>();
 	}
 
 	void DataProperty::operator=(const DataProperty& o)
 	{
 		destroy();
-		proputil::copy_construct(m_data, m_size, o.m_data, o.m_size);
-		m_typeid = o.m_typeid;
-	}
-
-	void DataProperty::operator=(DataProperty&& o)
-	{
-		if (this != &o)
-		{
-			destroy();
-			m_data		= o.m_data;
-			m_size		= o.m_size;
-			m_typeid	= o.m_typeid;
-			o.m_data	= o.m_size = 0;
-		}
-	}
-
-	DataProperty::~DataProperty()
-	{
-		destroy();
+		m_traits = o.m_traits;
+		proputil::copy_construct(m_data, o.m_data, m_traits->Size());
 	}
 
 	template<typename T>
@@ -142,31 +140,38 @@ namespace ks {
 	{
 		if ( !IsCompatible<T>() )
 		{
-			KS_ASSERT(0 && "Incompatible types");
+			KS_ASSERT(0 && "Incompatible type conversion.");
 		}
 
-		if (std::is_pointer<T>::value && m_size == 0)			// stored as pointer, being read as pointer
+		if (std::is_pointer<T>::value && m_traits->IsPointer())		// stored as pointer, being read as pointer
 			return (T&)m_data;
-		else if (m_size == 0 || m_size > sizeof(uintptr_t))		// stored as pointer or buffer, being read as reference or buffer
+		else if (m_traits->IsPointer())								// stored as pointer or buffer, being read as reference or buffer
 			return *(T*)m_data;
 
-		return (T&)m_data;										// default: stored as value type, read as value type
+		return (T&)m_data;											// default: stored as value type, read as value type
 	}
 
 	template<typename T>
 	inline bool DataProperty::IsCompatible() const
 	{
-		typedef typename bare_type<T>::Type	BareType;
-		return m_typeid->TypeID() == TypeUID< BareType >::TypeID()
-			|| ( std::_Is_numeric < BareType >::value && m_size <= sizeof(T) );		// is a numeric value type
+		typedef typename bare_type<T>::Type BareType;
+		if (std::_Is_numeric<T>::value && m_traits->IsNumeric())
+		{
+			// float to int conversions are incompatible and must be explicit.
+			return !m_traits->IsFloat() || m_traits->IsFloat() == std::is_floating_point<T>::value;
+		}
+		return m_traits->BareTypeID() == TypeUID<BareType>::TypeID();
 	}
 
 	void DataProperty::destroy()
 	{
-		if (m_size > sizeof(uintptr_t))
+		if (IsValid() && !m_traits->IsPointer() && m_traits->Size() > sizeof(uintptr_t))
 			free((void*)m_data);
 
-		m_data = m_size = 0;
+		m_data = 0;
+		m_traits = nullptr;
 	}
 
 }
+
+#endif

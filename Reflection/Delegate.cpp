@@ -1,9 +1,8 @@
-
 //////////////////////////////////////////////////////////////////////////
 ///
 /// Copyright (c)
 ///	@author		Nnanna Kama
-///	@date		29/08/2016
+///	@date		11/12/2016
 ///
 ///
 /// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
@@ -17,69 +16,27 @@
 /// WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //////////////////////////////////////////////////////////////////////////
 
-#ifndef DATAPROPERTY_H
-#define DATAPROPERTY_H
+#include "Delegate.h"
 
-#include <stdint.h>
 
 namespace ks {
-	
-	template <typename T>
-	struct ref_wrap
+
+	InvokerRegistry	InvokerRegistry::gInvRegistry;
+
+	InvokerRegistry::InvokerRegistry()
+	{}
+
+	InvokerRegistry::~InvokerRegistry()
 	{
-		ref_wrap(T& ref) : m_ref(ref)
-		{}
-		T& get()	{ return m_ref; }
-	private:
-		T& m_ref;
-	};
+		for (auto i = this->begin(); i != this->end(); ++i)
+		{
+			delete (*i);
+		}
+	}
 
-	template<typename T>
-	ref_wrap<T> ref(T& o)	{ return ref_wrap<T>(o); }
-
-	//////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// Beware: may incur excessive runtime allocations with types larger than 32bits. Prefer move semantics
-	//////////////////////////////////////////////////////////////////////////////////////////////////////////
-	class DataProperty
+	void InvokerRegistry::Add(IFuncInvoker* pInvoker)
 	{
-	public:
-		DataProperty();
-
-		template<typename T>
-		explicit DataProperty(T p_data);
-
-		template<typename T>
-		DataProperty(T& p_data);
-
-		template<typename T>
-		DataProperty(ref_wrap<T> p_data);
-
-		void operator=(const DataProperty& o);
-		void operator=(DataProperty&& o);
-
-		~DataProperty();
-
-		const char* ToString() const;
-
-		template<typename T>
-		operator T&();
-
-		template<typename T>
-		T& As();
-
-		template<typename T>
-		bool IsCompatible() const;
-
-		bool IsValid() const	{ return m_traits != nullptr; }
-
-	private:
-		uintptr_t				m_data;
-		struct ITypeStorage*	m_traits;
-
-		void		destroy();
-	};
-
+		gInvRegistry.push_back(pInvoker);
+	}
 
 }
-
-#endif

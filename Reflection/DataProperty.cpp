@@ -17,69 +17,41 @@
 /// WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //////////////////////////////////////////////////////////////////////////
 
-#ifndef DATAPROPERTY_H
-#define DATAPROPERTY_H
-
-#include <stdint.h>
+#include "DataProperty.h"
 
 namespace ks {
-	
-	template <typename T>
-	struct ref_wrap
+
+
+	DataProperty::DataProperty() : m_data(0), m_traits(nullptr)
+	{}
+
+	void DataProperty::operator=(DataProperty&& o)
 	{
-		ref_wrap(T& ref) : m_ref(ref)
-		{}
-		T& get()	{ return m_ref; }
-	private:
-		T& m_ref;
-	};
+		if (this != &o)
+		{
+			destroy();
+			m_data		= o.m_data;
+			m_traits	= o.m_traits;
+			o.m_data	= 0;
+			o.m_traits	= nullptr;
+		}
+	}
 
-	template<typename T>
-	ref_wrap<T> ref(T& o)	{ return ref_wrap<T>(o); }
-
-	//////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// Beware: may incur excessive runtime allocations with types larger than 32bits. Prefer move semantics
-	//////////////////////////////////////////////////////////////////////////////////////////////////////////
-	class DataProperty
+	DataProperty::~DataProperty()
 	{
-	public:
-		DataProperty();
+		destroy();
+	}
 
-		template<typename T>
-		explicit DataProperty(T p_data);
 
-		template<typename T>
-		DataProperty(T& p_data);
-
-		template<typename T>
-		DataProperty(ref_wrap<T> p_data);
-
-		void operator=(const DataProperty& o);
-		void operator=(DataProperty&& o);
-
-		~DataProperty();
-
-		const char* ToString() const;
-
-		template<typename T>
-		operator T&();
-
-		template<typename T>
-		T& As();
-
-		template<typename T>
-		bool IsCompatible() const;
-
-		bool IsValid() const	{ return m_traits != nullptr; }
-
-	private:
-		uintptr_t				m_data;
-		struct ITypeStorage*	m_traits;
-
-		void		destroy();
-	};
-
+	const char* DataProperty::ToString() const
+	{
+		// TODO: use m_traits to finalise serialisation
+		// implement typed to-string patterns for POD types
+		// template specialisation for custom data types & classes
+		// Derived type-id extension.
+		// referenced types to reduce overhead.
+		// find avoidance for virtual calls
+		return "TODO\n";
+	}
 
 }
-
-#endif
