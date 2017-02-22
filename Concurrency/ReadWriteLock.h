@@ -27,28 +27,34 @@ namespace ks {
 
 	struct ReadGuard
 	{
-		ReadGuard(ReadWriteLock* pLock);
+		friend class ReadWriteLock;
 		~ReadGuard();
 		ReadGuard(ReadGuard&&);
 		void Release();
 		bool Acquired() const;
+
 	private:
-		ReadGuard(const ReadGuard&);
-		ReadGuard& operator=(const ReadGuard&);
 		ReadWriteLock*	mOwner;
+		ReadGuard(ReadWriteLock* pLock);
+
+		ReadGuard(const ReadGuard&) = delete;
+		ReadGuard& operator=(const ReadGuard&) = delete;
 	};
 
 	struct WriteGuard
 	{
-		WriteGuard(ReadWriteLock* pLock);
+		friend class ReadWriteLock;
 		~WriteGuard();
 		WriteGuard(WriteGuard&&);
 		void Release();
 		bool Acquired() const;
+
 	private:
-		WriteGuard(const WriteGuard&);
-		WriteGuard& operator=(const WriteGuard&);
 		ReadWriteLock*	mOwner;
+		WriteGuard(ReadWriteLock* pLock);
+
+		WriteGuard(const WriteGuard&) = delete;
+		WriteGuard& operator=(const WriteGuard&) = delete;
 	};
 
 

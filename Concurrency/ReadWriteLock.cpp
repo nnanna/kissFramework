@@ -109,7 +109,7 @@ namespace ks {
 		{
 			if (GetCurrentThreadId() == mWritingThread)
 			{
-				break;
+				return ReadGuard(this);
 			}
 
 			WaitForSingleObject((HANDLE)mEvent, 1);
@@ -143,7 +143,7 @@ namespace ks {
 			if (threadID == mWritingThread)
 			{
 				++mReentrancyCount;
-				break;
+				return WriteGuard(this);
 			}
 
 			WaitForSingleObject((HANDLE)mEvent, INFINITE);

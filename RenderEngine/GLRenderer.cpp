@@ -21,8 +21,6 @@ namespace ks {
 
 	static Material* sMRUMaterial(nullptr);
 
-	static Mutex gRenderDataGuard;
-
 
 	///////////////////////////////////////////////////////////////////////////////////
 	template<>				ksU32 getGLType(const float* pT)		{ return GL_FLOAT; }
@@ -35,7 +33,7 @@ namespace ks {
 
 	GLRenderer::GLRenderer() : mMRUShader(NULL)
 	{
-		mRenderData.reserve(16);
+		mRenderData.Write()->reserve(16);
 	}
 
 
@@ -44,7 +42,7 @@ namespace ks {
 
 	GLRenderer::~GLRenderer()
 	{
-		mRenderData.clear();
+		mRenderData.Write()->clear();
 		RenderResourceFactory::shutDown();
 	}
 
@@ -62,8 +60,7 @@ namespace ks {
 
 	void GLRenderer::addRenderData(const RenderData* r)
 	{
-		ScopedLock lock(gRenderDataGuard);
-		mRenderData.push_back(r);
+		mRenderData.Write()->push_back(r);
 	}
 
 	//================================================================================================================
@@ -74,7 +71,7 @@ namespace ks {
 
 	void GLRenderer::flushRenderData()
 	{
-		mRenderData.clear();
+		mRenderData.Write()->clear();
 	}
 
 
@@ -125,7 +122,8 @@ namespace ks {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glEnableClientState(GL_VERTEX_ARRAY);
 
-		for (const RenderData* rd : mRenderData)
+		AsyncResource<RenderDataArray>::Writer renderData = mRenderData.Write();
+		for (const RenderData* rd : (*renderData))
 		{
 			Material *mat = rd->material;
 

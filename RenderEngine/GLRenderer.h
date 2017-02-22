@@ -7,6 +7,7 @@
 */
 
 #include <Containers\Array.h>
+#include <Concurrency\AsyncResource.h>
 
 
 class SimpleShaderContainer;
@@ -48,7 +49,7 @@ namespace ks
 		/*
 		data: array of vertex & index buffers for rendering
 		*/
-		RenderDataArray				mRenderData;
+		AsyncResource<RenderDataArray>	mRenderData;
 
 	};
 

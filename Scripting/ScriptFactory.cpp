@@ -208,10 +208,14 @@ namespace ks{
 		cmd				+= "/I \"..\\..\\kissFramework\" /I \"..\\..\\kissFramework\\Common\" /I \"..\\..\\kissFramework\\Containers\" ";
 
 		// preprocessor defines
+#if !SHIPPING_BUILD
+		cmd				+= "/DSCRIPT_BUILD=1 ";
+#endif
 #if _DEBUG
 		cmd				+= "/DDEBUG_VERSION /D_DEBUG ";
 #endif
 
+		// target cpp file.
 		cmd				+= "Scripts\\";
 		cmd				+= filename;
 		cmd				+= ".cpp";
