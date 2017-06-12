@@ -157,7 +157,7 @@ namespace ks {
 			{
 				GPUBuffer* ib = rd->mIndexBuffer;
 				ib->bind();
-				glDrawElements(rd->renderMode, rd->numIndices, GL_UNSIGNED_SHORT, 0);
+				glDrawElements(rd->renderMode, rd->numIndices, USE_16_BIT_INDEX_BUFFER ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, 0);
 				ib->unbind();
 			}
 			else

@@ -19,7 +19,7 @@
 
 
 #define RAD_TO_DEG(rad)		((rad) * (180.f / PI)	)
-#define DEG_TO_RAD(deg)		((deg) * (PI / 180.f)	)
+#define DEG_TO_RAD(deg)		((deg) * (0.01745329251994f) )	//(PI / 180.f)
 
 
 namespace ks {
@@ -57,7 +57,8 @@ namespace ks {
 
 		float Length() const;
 
-		float Dot(const vec4 & rhs) const;
+		float Dot(const vec4 & o) const;
+		float Dot(const struct vec3 & o) const;
 
 
 		float x, y, z, w;
@@ -102,7 +103,9 @@ namespace ks {
 		bool operator == (const vec3&) const;
 		bool operator != (const vec3&) const;
 
-		float Dot(const vec3& rhs) const;
+		float Dot(const vec3& o) const;
+		float Dot(const vec4& o) const;
+		vec3 Cross(const vec3& o) const;
 		float Length() const;
 		float LengthSq() const;
 		void Normalize();
@@ -116,7 +119,22 @@ namespace ks {
 		// pNormal must be normalised
 		void reflect(const vec3& pNormal, vec3& rReflection) const;
 
+		static void AddScale(vec3& pOut, const vec3& v1, const vec3& v2, const float scale);
+
 		float x, y, z;
+	};
+
+
+	//=======================================================================================================================
+	// vec2
+	//=======================================================================================================================
+
+	struct vec2
+	{
+		vec2(float px, float py);
+		void Set(float px, float py);
+
+		float x, y;
 	};
 
 
@@ -222,9 +240,13 @@ namespace ks {
 
 		Matrix & SetIdentity();
 		Matrix & SetScaling(float scale);
-		Matrix & SetRotateX(float angle);
-		Matrix & SetRotateY(float angle);
-		Matrix & SetRotateZ(float angle);
+		Matrix & SetRotateX(float radians);
+		Matrix & SetRotateY(float radians);
+		Matrix & SetRotateZ(float radians);
+		//
+		// TODO: SetRotationFast is inconsistent with the rest using radians.
+		//
+		void SetRotationFast(const vec3 & pAxis, float pDegree);
 
 		Matrix Transpose() const;
 		Matrix Inverse() const;

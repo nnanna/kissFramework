@@ -20,6 +20,7 @@ namespace ks {
 	RenderData::~RenderData()
 	{
 		delete mVertexBuffer;
+		delete mIndexBuffer;
 	}
 
 }

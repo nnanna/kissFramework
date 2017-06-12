@@ -8,6 +8,7 @@
 #include <math.h>
 #include <Common/Debug.h>
 #include <Maths/ks_Maths.h>
+#include <Utility.h>
 
 namespace ks {
 
@@ -35,13 +36,13 @@ namespace ks {
 		return ret;
 	}
 
-	void vsincosf(float angle, vec4* result)
+	void vsincosf(float radians, vec4* result)
 	{
 		__asm__ volatile (
 			"mtv %1, S000\n"
 			"vrot.q C010, S000, [s, c, 0, 0]\n"
 			"usv.q C010, 0 + %0\n"
-			: "+m"(*result) : "r"(angle));
+			: "+m"(*result) : "r"(radians));
 	}
 	void matrixMultiplyUnaligned(Matrix * m_out, const Matrix *mat_a, const Matrix *mat_b)
 	{
@@ -146,10 +147,10 @@ namespace ks {
 		return *this;
 	}
 
-	Matrix & Matrix::SetRotateX(float angle)
+	Matrix & Matrix::SetRotateX(float radians)
 	{
-		float	s(sinf(angle));
-		float	c(cosf(angle));
+		float	s(sinf(radians));
+		float	c(cosf(radians));
 
 		m11 = 1;	m12 = 0;	m13 = 0;	m14 = 0;
 		m21 = 0;	m22 = c;	m23 = -s;	m24 = 0;
@@ -158,10 +159,10 @@ namespace ks {
 		return *this;
 	}
 
-	Matrix & Matrix::SetRotateY(float angle)
+	Matrix & Matrix::SetRotateY(float radians)
 	{
-		float	s(sinf(angle));
-		float	c(cosf(angle));
+		float	s(sinf(radians));
+		float	c(cosf(radians));
 
 		m11 = c;	m12 = 0;	m13 = s;	m14 = 0;
 		m21 = 0;	m22 = 1;	m23 = 0;	m24 = 0;
@@ -170,10 +171,10 @@ namespace ks {
 		return *this;
 	}
 
-	Matrix & Matrix::SetRotateZ(float angle)
+	Matrix & Matrix::SetRotateZ(float radians)
 	{
-		float	s(sinf(angle));
-		float	c(cosf(angle));
+		float	s(sinf(radians));
+		float	c(cosf(radians));
 
 		m11 = c;	m12 = -s;	m13 = 0;	m14 = 0;
 		m21 = s;	m22 = c;	m23 = 0;	m24 = 0;
@@ -181,6 +182,35 @@ namespace ks {
 		m41 = 0;	m42 = 0;	m43 = 0;	m44 = 1;
 		return *this;
 	}
+
+	void Matrix::SetRotationFast(const vec3 & pAxis, float pTheta)
+	{
+		const float x = pAxis.x;
+		const float y = pAxis.y;
+		const float z = pAxis.z;
+		const float s = FAST_SIN(pTheta);
+		const float c = FAST_COS(pTheta);
+		const float t = 1 - c;
+		const float sx = s*x;
+		const float sy = s*y;
+		const float sz = s*z;
+		const float txy = t*x*y;
+		const float txz = t*x*z;
+		const float tyz = t*y*z;
+
+		m[0][0] = (t*x*x) + c;
+		m[0][1] = txy + sz;
+		m[0][2] = txz - sy;
+
+		m[1][0] = txy - sz;
+		m[1][1] = (t*y*y) + c;
+		m[1][2] = tyz + sx;
+
+		m[2][0] = txz + sy;
+		m[2][1] = tyz - sx;
+		m[2][2] = (t*z*z) + c;
+	}
+
 
 	vec3 Matrix::TransformCoord(const vec3 & vec) const
 	{
@@ -436,20 +466,18 @@ namespace ks {
 
 	/* Build a row-major (C-style) 4x4 matrix transform based on the
 	parameters for gluPerspective. */
-	void buildProjectionMatrix(float fieldOfView,
-		float aspectRatio,
-		float zNear, float zFar,
+	void buildProjectionMatrix(const float fieldOfView,
+		const float aspectRatio,
+		const float zNear, const float zFar,
 		float m[16])
 	{
-		float radians = fieldOfView / 2.0f * (float)PI / 180.0f;
+		const float radians = (fieldOfView * 0.5f) * ((float)PI / 180.0f);
 
-		float deltaZ = zFar - zNear;
-		float sine = sin(radians);
-		/* Should be non-zero to avoid division by zero. */
-		/*assert(deltaZ);
-		assert(sine);
-		assert(aspectRatio);*/
-		float cotangent = cos(radians) / sine;
+		const float deltaZ = zFar - zNear;
+		const float sine = sinf(radians);
+		
+		KS_ASSERT(deltaZ && sine && aspectRatio);	// Should be non-zero to avoid division by zero.
+		const float cotangent = cosf(radians) / sine;
 
 		m[0 * 4 + 0] = cotangent / aspectRatio;
 		m[0 * 4 + 1] = 0.0;
@@ -628,7 +656,6 @@ namespace ks {
 		float ax, float ay, float az,
 		float m[16])
 	{
-		float radians, sine, cosine, ab, bc, ca, tx, ty, tz;
 		float axis[3];
 		float mag;
 
@@ -642,15 +669,15 @@ namespace ks {
 			axis[2] /= mag;
 		}
 
-		radians = angle * (float)PI / 180.0f;
-		sine = sin(radians);
-		cosine = cos(radians);
-		ab = axis[0] * axis[1] * (1 - cosine);
-		bc = axis[1] * axis[2] * (1 - cosine);
-		ca = axis[2] * axis[0] * (1 - cosine);
-		tx = axis[0] * axis[0];
-		ty = axis[1] * axis[1];
-		tz = axis[2] * axis[2];
+		const float radians = angle * (float)PI / 180.0f;
+		const float sine = sinf(radians);
+		const float cosine = cosf(radians);
+		const float ab = axis[0] * axis[1] * (1 - cosine);
+		const float bc = axis[1] * axis[2] * (1 - cosine);
+		const float ca = axis[2] * axis[0] * (1 - cosine);
+		const float tx = axis[0] * axis[0];
+		const float ty = axis[1] * axis[1];
+		const float tz = axis[2] * axis[2];
 
 		m[0] = tx + cosine * (1 - tx);
 		m[1] = ab + axis[2] * sine;

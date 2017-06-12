@@ -14,6 +14,16 @@
 
 namespace ks
 {
+
+#define	USE_16_BIT_INDEX_BUFFER	0
+
+#if USE_16_BIT_INDEX_BUFFER
+	typedef ksUShort	IndexBufferType;
+#else
+	typedef ksU32		IndexBufferType;
+#endif
+
+
 	class Matrix;
 	class GPUBuffer;
 	struct Material;

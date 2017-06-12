@@ -100,9 +100,6 @@
     <ClCompile Include="..\Memory\FrameAllocator.cpp">
       <Filter>Memory</Filter>
     </ClCompile>
-    <ClCompile Include="..\Scene\tiny_obj_loader.cc">
-      <Filter>Scene</Filter>
-    </ClCompile>
     <ClCompile Include="..\Scripting\ScriptEnvironment.cpp">
       <Filter>Scripting</Filter>
     </ClCompile>
@@ -111,6 +108,18 @@
     </ClCompile>
     <ClCompile Include="..\Profiling\Trace.cpp">
       <Filter>Profiling</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Reflection\DataProperty.cpp">
+      <Filter>Reflection</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Reflection\Delegate.cpp">
+      <Filter>Reflection</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Reflection\ReflObject.cpp">
+      <Filter>Reflection</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Scene\Model.cpp">
+      <Filter>Scene</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -233,6 +242,30 @@
     </ClInclude>
     <ClInclude Include="..\Profiling\Trace.h">
       <Filter>Profiling</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Reflection\Delegate.h">
+      <Filter>Reflection</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Reflection\Delegate.hpp">
+      <Filter>Reflection</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Concurrency\AsyncResource.h">
+      <Filter>Concurrency</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Containers\CyclicQueue.h">
+      <Filter>Containers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Containers\CyclicQueue.hpp">
+      <Filter>Containers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Reflection\ReflObject.h">
+      <Filter>Reflection</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Scene\Model.h">
+      <Filter>Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Common\Utility.h">
+      <Filter>Common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

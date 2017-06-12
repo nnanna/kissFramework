@@ -589,6 +589,25 @@ namespace ks {
 #endif
 		}
 
+		//
+		// doesn't reorder the array, swaps with the last entry
+		//
+		iterator erase_swap(iterator item)
+		{
+			const size_type new_size = _size - 1;
+			CHECK_OUT_OF_BOUNDS(new_size);
+			iterator next(item);
+
+			*item = back();
+			resize(new_size);
+
+#if KS_USE_FORWARD_ITERATOR_CLASS
+			return iterator(_begin, &(*next), _begin + _size);
+#else
+			return next;
+#endif
+		}
+
 		iterator insert( iterator pPos, const_reference pValue )
 		{
 			const size_type diff = pPos - begin();
@@ -743,6 +762,30 @@ namespace ks {
 		}
 	};
 
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// ArrayRHS : allows implicit copying
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	template<typename T, class TAllocator = std::allocator<T> >
+	class ArrayRHS : public Array<T, TAllocator>
+	{
+	public:
+		ArrayRHS() : Array()
+		{}
+
+#if KS_ARRAY_MOVE_SEMANTICS_ONLY
+		ArrayRHS(const ArrayRHS &other) : Array()
+		{
+			explicit_copy(other);
+		}
+
+
+		ArrayRHS &operator=(const ArrayRHS &other)
+		{
+			explicit_copy(other);
+			return *this;
+		}
+#endif
+	};
 
 }	//namespace ks
 

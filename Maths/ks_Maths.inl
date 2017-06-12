@@ -121,9 +121,20 @@ namespace ks {
 		return vec3(f * v.x, f * v.y, f * v.z);
 	}
 
-	inline float vec3::Dot(const vec3& rhs) const
+	inline float vec3::Dot(const vec3& o) const
 	{
-		return (x*rhs.x) + (y*rhs.y) + (z*rhs.z);
+		return (x*o.x) + (y*o.y) + (z*o.z);
+	}
+
+	inline float vec3::Dot(const vec4& o) const
+	{
+		return (x*o.x) + (y*o.y) + (z*o.z);
+	}
+
+	inline vec3 vec3::Cross(const vec3& o) const
+	{
+		vec3 cross( (y * o.z) - (o.y * z), (z * o.x) - (o.z * x), (x * o.y) - (o.x * y) );
+		return cross;
 	}
 
 	inline float vec3::LengthSq() const
@@ -155,6 +166,12 @@ namespace ks {
 		float dot = Dot(pNormal);
 		rReflection = pNormal * dot * 2.f;
 		rReflection = *this - rReflection;
+	}
+
+	inline void vec3::AddScale(vec3& pOut, const vec3& v1, const vec3& v2, const float scale)
+	{
+		pOut = v1 + v2;
+		pOut *= scale;
 	}
 
 
@@ -198,9 +215,22 @@ namespace ks {
 		return 1.0f / InvSqrt((x*x) + (y*y) + (z*z) + (w*w));
 	}
 
-	inline float vec4::Dot(const vec4 & rhs) const
+	inline float vec4::Dot(const vec4 & o) const
 	{
-		return (x*rhs.x) + (y*rhs.y) + (z*rhs.z) + (w*rhs.w);
+		return (x*o.x) + (y*o.y) + (z*o.z) + (w*o.w);
+	}
+
+	inline float vec4::Dot(const vec3 & o) const
+	{
+		return (x*o.x) + (y*o.y) + (z*o.z);
+	}
+
+
+	inline vec2::vec2(float px, float py) : x(px), y(py)
+	{}
+	inline void vec2::Set(float px, float py)
+	{
+		x = px; y = py;
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

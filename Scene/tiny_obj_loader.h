@@ -32,6 +32,9 @@
 // version 0.9.1 : Add initial .mtl load support
 // version 0.9.0 : Initial
 //
+// version 0.9.0.1 : Nnanna Kama : sped up file reads, parsing and data-structure usage by making some assumptions.
+// replaced maps, some strings, and vector<vector> structs with fixed sized buffers
+// Exponentially faster, especially in Debug where loading venusm.obj went from ~12s to ~1s.
 
 //
 // Use this in *one* .cc
@@ -43,72 +46,28 @@
 #define TINY_OBJ_LOADER_H_
 
 #include <string>
-#include <vector>
-#include <map>
+#include <unordered_map>
 #include <cmath>
+#include "Debug.h"
+#if TINYOBJLOADER_USE_CUSTOM_VECTOR
+#include <Containers\Array.h>
+#else
+#include <vector>
+#endif
 
 namespace tinyobj {
 
-	typedef struct {
-		std::string name;
+#if TINYOBJLOADER_USE_CUSTOM_VECTOR
+	template<typename T>
+	using ArrayType = typename ks::ArrayRHS<T>;
+#else
+	template<typename T>
+	using ArrayType = typename std::vector<T>;
+#endif
 
-		float ambient[3];
-		float diffuse[3];
-		float specular[3];
-		float transmittance[3];
-		float emission[3];
-		float shininess;
-		float ior;      // index of refraction
-		float dissolve; // 1 == opaque; 0 == fully transparent
-		// illumination model (see http://www.fileformat.info/format/material/)
-		int illum;
 
-		int dummy; // Suppress padding warning.
-
-		std::string ambient_texname;            // map_Ka
-		std::string diffuse_texname;            // map_Kd
-		std::string specular_texname;           // map_Ks
-		std::string specular_highlight_texname; // map_Ns
-		std::string bump_texname;               // map_bump, bump
-		std::string displacement_texname;       // disp
-		std::string alpha_texname;              // map_d
-		std::map<std::string, std::string> unknown_parameter;
-	} material_t;
-
-	typedef struct {
-		std::string name;
-
-		std::vector<int> intValues;
-		std::vector<float> floatValues;
-		std::vector<std::string> stringValues;
-	} tag_t;
-
-	typedef struct {
-		std::vector<float> positions;
-		std::vector<float> normals;
-		std::vector<float> texcoords;
-		std::vector<unsigned int> indices;
-		std::vector<unsigned char>
-			num_vertices;              // The number of vertices per face. Up to 255.
-		std::vector<int> material_ids; // per-face material ID
-		std::vector<tag_t> tags;       // SubD tag
-	} mesh_t;
-
-	typedef struct {
-		std::string name;
-		mesh_t mesh;
-	} shape_t;
-
-	typedef enum
+	struct float3
 	{
-		triangulation = 1,        // used whether triangulate polygon face in .obj
-		calculate_normals = 2,    // used whether calculate the normals if the .obj normals are empty
-		// Some nice stuff here
-	} load_flags_t;
-
-	class float3
-	{
-	public:
 		float3()
 			: x(0.0f)
 			, y(0.0f)
@@ -151,7 +110,7 @@ namespace tinyobj {
 			}
 		}
 
-	private:
+		//private:
 		union
 		{
 			float coord[3];
@@ -162,14 +121,70 @@ namespace tinyobj {
 		};
 	};
 
+	typedef struct {
+		std::string name;
+
+		float ambient[3];
+		float diffuse[3];
+		float specular[3];
+		float transmittance[3];
+		float emission[3];
+		float shininess;
+		float ior;      // index of refraction
+		float dissolve; // 1 == opaque; 0 == fully transparent
+		// illumination model (see http://www.fileformat.info/format/material/)
+		int illum;
+
+		int dummy; // Suppress padding warning.
+
+		std::string ambient_texname;            // map_Ka
+		std::string diffuse_texname;            // map_Kd
+		std::string specular_texname;           // map_Ks
+		std::string specular_highlight_texname; // map_Ns
+		std::string bump_texname;               // map_bump, bump
+		std::string displacement_texname;       // disp
+		std::string alpha_texname;              // map_d
+		std::unordered_map<std::string, std::string> unknown_parameter;
+	} material_t;
+
+	typedef struct {
+		std::string name;
+
+		ArrayType<int> intValues;
+		ArrayType<float> floatValues;
+		ArrayType<std::string> stringValues;
+	} tag_t;
+
+	typedef struct {
+		ArrayType<float3> positions;
+		ArrayType<float3> normals;
+		ArrayType<float> texcoords;
+		ArrayType<unsigned int> indices;
+		unsigned char max_num_vertices;	// The number of vertices per face. Up to 255.
+		ArrayType<int> material_ids;	// per-face material ID
+		ArrayType<tag_t> tags;		// SubD tag
+	} mesh_t;
+
+	typedef struct {
+		std::string name;
+		mesh_t mesh;
+	} shape_t;
+
+	typedef enum
+	{
+		triangulation = 1,        // used whether triangulate polygon face in .obj
+		calculate_normals = 2,    // used whether calculate the normals if the .obj normals are empty
+		// Some nice stuff here
+	} load_flags_t;
+
 	class MaterialReader {
 	public:
 		MaterialReader() {}
 		virtual ~MaterialReader();
 
 		virtual bool operator()(const std::string &matId,
-			std::vector<material_t> &materials,
-			std::map<std::string, int> &matMap,
+			ArrayType<material_t> &materials,
+			std::unordered_map<std::string, int> &matMap,
 			std::string &err) = 0;
 	};
 
@@ -179,8 +194,8 @@ namespace tinyobj {
 			: m_mtlBasePath(mtl_basepath) {}
 		virtual ~MaterialFileReader() {}
 		virtual bool operator()(const std::string &matId,
-			std::vector<material_t> &materials,
-			std::map<std::string, int> &matMap, std::string &err);
+			ArrayType<material_t> &materials,
+			std::unordered_map<std::string, int> &matMap, std::string &err);
 
 	private:
 		std::string m_mtlBasePath;
@@ -193,8 +208,8 @@ namespace tinyobj {
 	/// Returns warning and error message into `err`
 	/// 'mtl_basepath' is optional, and used for base path for .mtl file.
 	/// 'optional flags
-	bool LoadObj(std::vector<shape_t> &shapes,       // [output]
-		std::vector<material_t> &materials, // [output]
+	bool LoadObj(ArrayType<shape_t> &shapes,       // [output]
+		ArrayType<material_t> &materials, // [output]
 		std::string &err,                   // [output]
 		const char *filename, const char *mtl_basepath = NULL,
 		unsigned int flags = 1);
@@ -203,15 +218,15 @@ namespace tinyobj {
 	/// std::istream for materials.
 	/// Returns true when loading .obj become success.
 	/// Returns warning and error message into `err`
-	bool LoadObj(std::vector<shape_t> &shapes,       // [output]
-		std::vector<material_t> &materials, // [output]
+	bool LoadObj(ArrayType<shape_t> &shapes,       // [output]
+		ArrayType<material_t> &materials, // [output]
 		std::string &err,                   // [output]
-		std::istream &inStream, MaterialReader &readMatFn,
+		struct fstream &inStream, MaterialReader &readMatFn,
 		unsigned int flags = 1);
 
-	/// Loads materials into std::map
-	void LoadMtl(std::map<std::string, int> &material_map, // [output]
-		std::vector<material_t> &materials,       // [output]
+	/// Loads materials into std::unordered_map
+	void LoadMtl(std::unordered_map<std::string, int> &material_map, // [output]
+		ArrayType<material_t> &materials,       // [output]
 		std::istream &inStream);
 }
 
@@ -228,19 +243,59 @@ namespace tinyobj {
 
 #include "tiny_obj_loader.h"
 
+
+struct vertex_index {
+	int v_idx, vt_idx, vn_idx;
+	vertex_index() : v_idx(-1), vt_idx(-1), vn_idx(-1) {}
+	explicit vertex_index(int idx) : v_idx(idx), vt_idx(idx), vn_idx(idx) {}
+	vertex_index(int vidx, int vtidx, int vnidx)
+		: v_idx(vidx), vt_idx(vtidx), vn_idx(vnidx) {}
+	
+	bool operator==(const vertex_index& rhs) const
+	{
+		return v_idx == rhs.v_idx && vt_idx == rhs.vt_idx && vn_idx == rhs.vn_idx;
+	}
+};
+
+namespace std
+{
+	// for std::unordered_map
+	template<> struct hash<vertex_index>
+	{
+		size_t operator()(const vertex_index& vi) const
+		{
+			return vi.v_idx ^ vi.vn_idx ^ vi.vt_idx;
+		}
+	};
+}
+
+
 namespace tinyobj {
+
+	struct Face
+	{
+		Face() : index(0)
+		{}
+		void clear()	{ index = 0; }
+		void push_back(vertex_index& val)					{ KS_ASSERT(index < capacity); vi[index++] = val; }
+		vertex_index& operator[](unsigned idx)				{ KS_ASSERT(idx < capacity); return vi[idx]; }
+		const vertex_index& operator[](unsigned idx) const	{ KS_ASSERT(idx < capacity); return vi[idx]; }
+		unsigned size() const								{ return index; }
+#if SUPPORT_OCTAGONAL_FACES
+		static const unsigned capacity = 8;
+#elif SUPPORT_QUADS
+		static const unsigned capacity = 4;
+#else	// TRIANGLES
+		static const unsigned capacity = 3;
+#endif
+	private:
+		unsigned index;
+		vertex_index vi[capacity];
+	};
 
 	MaterialReader::~MaterialReader() {}
 
 #define TINYOBJ_SSCANF_BUFFER_SIZE (4096)
-
-	struct vertex_index {
-		int v_idx, vt_idx, vn_idx;
-		vertex_index() : v_idx(-1), vt_idx(-1), vn_idx(-1) {}
-		explicit vertex_index(int idx) : v_idx(idx), vt_idx(idx), vn_idx(idx) {}
-		vertex_index(int vidx, int vtidx, int vnidx)
-			: v_idx(vidx), vt_idx(vtidx), vn_idx(vnidx) {}
-	};
 
 	struct tag_sizes {
 		tag_sizes() : num_ints(0), num_floats(0), num_strings(0) {}
@@ -249,22 +304,10 @@ namespace tinyobj {
 		int num_strings;
 	};
 
-	// for std::map
-	static inline bool operator<(const vertex_index &a, const vertex_index &b) {
-		if (a.v_idx != b.v_idx)
-			return (a.v_idx < b.v_idx);
-		if (a.vn_idx != b.vn_idx)
-			return (a.vn_idx < b.vn_idx);
-		if (a.vt_idx != b.vt_idx)
-			return (a.vt_idx < b.vt_idx);
-
-		return false;
-	}
-
 	struct obj_shape {
-		std::vector<float> v;
-		std::vector<float> vn;
-		std::vector<float> vt;
+		ArrayType<float> v;
+		ArrayType<float> vn;
+		ArrayType<float> vt;
 	};
 
 	//See http://stackoverflow.com/questions/6089231/getting-std-ifstream-to-handle-lf-cr-and-crlf
@@ -469,7 +512,7 @@ namespace tinyobj {
 	}
 	static inline float parseFloat(const char *&token) {
 		token += strspn(token, " \t");
-#ifdef TINY_OBJ_LOADER_OLD_FLOAT_PARSER
+#if TINY_OBJ_LOADER_OLD_FLOAT_PARSER
 		float f = (float)atof(token);
 		token += strcspn(token, " \t\r");
 #else
@@ -552,40 +595,40 @@ namespace tinyobj {
 	}
 
 	static unsigned int
-		updateVertex(std::map<vertex_index, unsigned int> &vertexCache,
-		std::vector<float> &positions, std::vector<float> &normals,
-		std::vector<float> &texcoords,
-		const std::vector<float> &in_positions,
-		const std::vector<float> &in_normals,
-		const std::vector<float> &in_texcoords, const vertex_index &i) {
-		const std::map<vertex_index, unsigned int>::iterator it = vertexCache.find(i);
+		updateVertex(ArrayType<int> &vertexCache,
+		ArrayType<float3> &positions, ArrayType<float3> &normals,
+		ArrayType<float> &texcoords,
+		const ArrayType<float3> &in_positions,
+		const ArrayType<float3> &in_normals,
+		const ArrayType<float> &in_texcoords, const vertex_index &i) {
+		//const std::unordered_map<vertex_index, unsigned int>::iterator it = vertexCache.find(i);
 
-		if (it != vertexCache.end()) {
-			// found cache
-			return it->second;
+		if (vertexCache.size() <= size_t(i.v_idx))
+		{
+			vertexCache.resize(in_positions.size(), -1);
 		}
 
-		assert(in_positions.size() > static_cast<unsigned int>(3 * i.v_idx + 2));
+		if (vertexCache[i.v_idx] != -1) {
+			// found cache
+			return vertexCache[i.v_idx];
+		}
 
-		positions.push_back(in_positions[3 * static_cast<size_t>(i.v_idx) + 0]);
-		positions.push_back(in_positions[3 * static_cast<size_t>(i.v_idx) + 1]);
-		positions.push_back(in_positions[3 * static_cast<size_t>(i.v_idx) + 2]);
+		KS_ASSERT(in_positions.size() > size_t(i.v_idx));
 
-		if ((i.vn_idx >= 0) &&
-			(static_cast<size_t>(i.vn_idx * 3 + 2) < in_normals.size())) {
-			normals.push_back(in_normals[3 * static_cast<size_t>(i.vn_idx) + 0]);
-			normals.push_back(in_normals[3 * static_cast<size_t>(i.vn_idx) + 1]);
-			normals.push_back(in_normals[3 * static_cast<size_t>(i.vn_idx) + 2]);
+		positions.push_back(in_positions[i.v_idx]);
+
+		if ((i.vn_idx >= 0) && size_t(i.vn_idx) < in_normals.size()) {
+			normals.push_back(in_normals[i.vn_idx]);
 		}
 
 		if ((i.vt_idx >= 0) &&
-			(static_cast<size_t>(i.vt_idx * 2 + 1) < in_texcoords.size())) {
-			texcoords.push_back(in_texcoords[2 * static_cast<size_t>(i.vt_idx) + 0]);
-			texcoords.push_back(in_texcoords[2 * static_cast<size_t>(i.vt_idx) + 1]);
+			(size_t(i.vt_idx * 2 + 1) < in_texcoords.size())) {
+			texcoords.push_back(in_texcoords[2 * size_t(i.vt_idx) + 0]);
+			texcoords.push_back(in_texcoords[2 * size_t(i.vt_idx) + 1]);
 		}
 
-		unsigned int idx = static_cast<unsigned int>(positions.size() / 3 - 1);
-		vertexCache[i] = idx;
+		unsigned idx = positions.size() - 1;
+		vertexCache[i.v_idx] = idx;
 
 		return idx;
 	}
@@ -614,12 +657,12 @@ namespace tinyobj {
 	}
 
 	static bool exportFaceGroupToShape(
-		shape_t &shape, std::map<vertex_index, unsigned int> vertexCache,
-		const std::vector<float> &in_positions,
-		const std::vector<float> &in_normals,
-		const std::vector<float> &in_texcoords,
-		const std::vector<std::vector<vertex_index> > &faceGroup,
-		std::vector<tag_t> &tags, const int material_id, const std::string &name,
+		shape_t &shape, ArrayType<int>& vertexCache,
+		const ArrayType<float3> &in_positions,
+		const ArrayType<float3> &in_normals,
+		const ArrayType<float> &in_texcoords,
+		const ArrayType<Face> &faceGroup,
+		ArrayType<tag_t> &tags, const int material_id, const std::string &name,
 		bool clearCache, unsigned int flags, std::string& err) {
 		if (faceGroup.empty()) {
 			return false;
@@ -628,9 +671,13 @@ namespace tinyobj {
 		bool triangulate((flags & triangulation) == triangulation);
 		bool normals_calculation((flags & calculate_normals) == calculate_normals);
 
+		shape.mesh.positions.reserve(in_positions.size());
+		shape.mesh.normals.reserve(in_normals.size());
+		shape.mesh.indices.reserve(in_positions.size() * 3);
+
 		// Flatten vertices and indices
 		for (size_t i = 0; i < faceGroup.size(); i++) {
-			const std::vector<vertex_index> &face = faceGroup[i];
+			const Face &face = faceGroup[i];
 
 			vertex_index i0 = face[0];
 			vertex_index i1(-1);
@@ -659,7 +706,7 @@ namespace tinyobj {
 					shape.mesh.indices.push_back(v1);
 					shape.mesh.indices.push_back(v2);
 
-					shape.mesh.num_vertices.push_back(3);
+					shape.mesh.max_num_vertices = 3;
 					shape.mesh.material_ids.push_back(material_id);
 				}
 			}
@@ -674,7 +721,7 @@ namespace tinyobj {
 					shape.mesh.indices.push_back(v);
 				}
 
-				shape.mesh.num_vertices.push_back(static_cast<unsigned char>(npolys));
+				shape.mesh.max_num_vertices = npolys;
 				shape.mesh.material_ids.push_back(material_id); // per face
 			}
 		}
@@ -685,9 +732,9 @@ namespace tinyobj {
 				shape.mesh.normals.resize(shape.mesh.positions.size());
 				for (register size_t iIndices = 0; iIndices < nIndexs; iIndices += 3) {
 					float3 v1, v2, v3;
-					memcpy(&v1, &shape.mesh.positions[shape.mesh.indices[iIndices] * 3], sizeof(float3));
-					memcpy(&v2, &shape.mesh.positions[shape.mesh.indices[iIndices + 1] * 3], sizeof(float3));
-					memcpy(&v3, &shape.mesh.positions[shape.mesh.indices[iIndices + 2] * 3], sizeof(float3));
+					memcpy(&v1, &shape.mesh.positions[shape.mesh.indices[iIndices]], sizeof(float3));
+					memcpy(&v2, &shape.mesh.positions[shape.mesh.indices[iIndices + 1]], sizeof(float3));
+					memcpy(&v3, &shape.mesh.positions[shape.mesh.indices[iIndices + 2]], sizeof(float3));
 
 					float3 v12(v1, v2);
 					float3 v13(v1, v3);
@@ -695,9 +742,9 @@ namespace tinyobj {
 					float3 normal = v12.crossproduct(v13);
 					normal.normalize();
 
-					memcpy(&shape.mesh.normals[shape.mesh.indices[iIndices] * 3], &normal, sizeof(float3));
-					memcpy(&shape.mesh.normals[shape.mesh.indices[iIndices + 1] * 3], &normal, sizeof(float3));
-					memcpy(&shape.mesh.normals[shape.mesh.indices[iIndices + 2] * 3], &normal, sizeof(float3));
+					memcpy(&shape.mesh.normals[shape.mesh.indices[iIndices]], &normal, sizeof(float3));
+					memcpy(&shape.mesh.normals[shape.mesh.indices[iIndices + 1]], &normal, sizeof(float3));
+					memcpy(&shape.mesh.normals[shape.mesh.indices[iIndices + 2]], &normal, sizeof(float3));
 				}
 			}
 			else {
@@ -717,8 +764,8 @@ namespace tinyobj {
 		return true;
 	}
 
-	void LoadMtl(std::map<std::string, int> &material_map,
-		std::vector<material_t> &materials, std::istream &inStream) {
+	void LoadMtl(std::unordered_map<std::string, int> &material_map,
+		ArrayType<material_t> &materials, std::istream &inStream) {
 
 		// Create a default material anyway.
 		material_t material;
@@ -747,7 +794,7 @@ namespace tinyobj {
 			const char *token = linebuf.c_str();
 			token += strspn(token, " \t");
 
-			assert(token);
+			KS_ASSERT(token);
 			if (token[0] == '\0')
 				continue; // empty line
 
@@ -943,8 +990,8 @@ namespace tinyobj {
 	}
 
 	bool MaterialFileReader::operator()(const std::string &matId,
-		std::vector<material_t> &materials,
-		std::map<std::string, int> &matMap,
+		ArrayType<material_t> &materials,
+		std::unordered_map<std::string, int> &matMap,
 		std::string &err) {
 		std::string filepath;
 
@@ -966,8 +1013,44 @@ namespace tinyobj {
 		return true;
 	}
 
-	bool LoadObj(std::vector<shape_t> &shapes,       // [output]
-		std::vector<material_t> &materials, // [output]
+	struct fstream
+	{
+		fstream(const char* filename) : mFile(nullptr)
+		{
+			//must read files as binary to prevent problems from newline translation
+			int error = fopen_s(&mFile, filename, "rb");
+			if (error == 0)
+			{
+				//fseek(mFile, 0, SEEK_END);
+				//long size = ftell(mFile);
+				//fseek(mFile, 0, SEEK_SET);
+			}
+		}
+
+		operator FILE*() const	{ return mFile; }
+
+		~fstream()
+		{
+			if (mFile)
+				fclose(mFile);
+		}
+
+		const char* safeGetline()
+		{
+			if (mFile && fgets(LineBuffer, TINYOBJ_SSCANF_BUFFER_SIZE, mFile) != NULL)
+			{
+				return LineBuffer;
+			}
+			return nullptr;
+		}
+
+	private:
+		FILE* mFile;
+		char LineBuffer[TINYOBJ_SSCANF_BUFFER_SIZE];
+	};
+
+	bool LoadObj(ArrayType<shape_t> &shapes,       // [output]
+		ArrayType<material_t> &materials, // [output]
 		std::string &err, const char *filename, const char *mtl_basepath,
 		unsigned int flags) {
 
@@ -975,8 +1058,10 @@ namespace tinyobj {
 
 		std::stringstream errss;
 
-		std::ifstream ifs(filename);
+		fstream ifs(filename);
+
 		if (!ifs) {
+			KS_ASSERT(0);
 			errss << "Cannot open file [" << filename << "]" << std::endl;
 			err = errss.str();
 			return false;
@@ -991,33 +1076,33 @@ namespace tinyobj {
 		return LoadObj(shapes, materials, err, ifs, matFileReader, flags);
 	}
 
-	bool LoadObj(std::vector<shape_t> &shapes,       // [output]
-		std::vector<material_t> &materials, // [output]
-		std::string &err, std::istream &inStream,
+	bool LoadObj(ArrayType<shape_t> &shapes,       // [output]
+		ArrayType<material_t> &materials, // [output]
+		std::string &err, fstream &inStream,
 		MaterialReader &readMatFn, unsigned int flags) {
 
 		std::stringstream errss;
 
-		std::vector<float> v;
-		std::vector<float> vn;
-		std::vector<float> vt;
-		std::vector<tag_t> tags;
-		std::vector<std::vector<vertex_index> > faceGroup;
+		ArrayType<float3> v;
+		ArrayType<float3> vn;
+		ArrayType<float> vt;
+		ArrayType<tag_t> tags;
+		ArrayType<Face > faceGroup;
 		std::string name;
 
 		// material
-		std::map<std::string, int> material_map;
-		std::map<vertex_index, unsigned int> vertexCache;
+		std::unordered_map<std::string, int> material_map;
+		ArrayType<int> vertexCache;
 		int material = -1;
 
 		shape_t shape;
+		float3 temp;
+		Face face;
 
-		while (inStream.peek() != -1) {
-			std::string linebuf;
-			safeGetline(inStream, linebuf);
+		while (const char* token = inStream.safeGetline()) {
 
 			// Trim newline '\r\n' or '\n'
-			if (linebuf.size() > 0) {
+			/*if (linebuf.size() > 0) {
 				if (linebuf[linebuf.size() - 1] == '\n')
 					linebuf.erase(linebuf.size() - 1);
 			}
@@ -1029,14 +1114,14 @@ namespace tinyobj {
 			// Skip if empty line.
 			if (linebuf.empty()) {
 				continue;
-			}
+			}*/
 
 			// Skip leading space.
-			const char *token = linebuf.c_str();
+			//const char *token = linebuf.c_str();
 			token += strspn(token, " \t");
 
-			assert(token);
-			if (token[0] == '\0')
+			KS_ASSERT(token);
+			if (token[0] == '\0' || token[0] == '\t' || token[0] == '\n')
 				continue; // empty line
 
 			if (token[0] == '#')
@@ -1045,22 +1130,16 @@ namespace tinyobj {
 			// vertex
 			if (token[0] == 'v' && IS_SPACE((token[1]))) {
 				token += 2;
-				float x, y, z;
-				parseFloat3(x, y, z, token);
-				v.push_back(x);
-				v.push_back(y);
-				v.push_back(z);
+				parseFloat3(temp.x, temp.y, temp.z, token);
+				v.push_back(temp);
 				continue;
 			}
 
 			// normal
 			if (token[0] == 'v' && token[1] == 'n' && IS_SPACE((token[2]))) {
 				token += 3;
-				float x, y, z;
-				parseFloat3(x, y, z, token);
-				vn.push_back(x);
-				vn.push_back(y);
-				vn.push_back(z);
+				parseFloat3(temp.x, temp.y, temp.z, token);
+				vn.push_back(temp);
 				continue;
 			}
 
@@ -1079,12 +1158,11 @@ namespace tinyobj {
 				token += 2;
 				token += strspn(token, " \t");
 
-				std::vector<vertex_index> face;
-				face.reserve(3);
+				face.clear();
 
 				while (!IS_NEW_LINE(token[0])) {
-					vertex_index vi = parseTriple(token, static_cast<int>(v.size() / 3),
-						static_cast<int>(vn.size() / 3),
+					vertex_index vi = parseTriple(token, static_cast<int>(v.size()),
+						static_cast<int>(vn.size() ),
 						static_cast<int>(vt.size() / 2));
 					face.push_back(vi);
 					size_t n = strspn(token, " \t\r");
@@ -1092,8 +1170,7 @@ namespace tinyobj {
 				}
 
 				// replace with emplace_back + std::move on C++11
-				faceGroup.push_back(std::vector<vertex_index>());
-				faceGroup[faceGroup.size() - 1].swap(face);
+				faceGroup.push_back(face);
 
 				continue;
 			}
@@ -1166,7 +1243,7 @@ namespace tinyobj {
 				// material = -1;
 				faceGroup.clear();
 
-				std::vector<std::string> names;
+				ArrayType<std::string> names;
 				names.reserve(2);
 
 				while (!IS_NEW_LINE(token[0])) {
@@ -1175,7 +1252,7 @@ namespace tinyobj {
 					token += strspn(token, " \t\r"); // skip tag
 				}
 
-				assert(names.size() > 0);
+				KS_ASSERT(names.size() > 0);
 
 				// names[0] must be 'g', so skip the 0th element.
 				if (names.size() > 1) {

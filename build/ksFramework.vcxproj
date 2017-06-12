@@ -33,6 +33,9 @@
     <ClCompile Include="..\Memory\FrameAllocator.cpp" />
     <ClCompile Include="..\Memory\ThreadStackAllocator.cpp" />
     <ClCompile Include="..\Profiling\Trace.cpp" />
+    <ClCompile Include="..\Reflection\DataProperty.cpp" />
+    <ClCompile Include="..\Reflection\Delegate.cpp" />
+    <ClCompile Include="..\Reflection\ReflObject.cpp" />
     <ClCompile Include="..\Reflection\TypeUID.cpp" />
     <ClCompile Include="..\RenderEngine\GLRenderer.cpp" />
     <ClCompile Include="..\RenderEngine\GPUBuffer.cpp" />
@@ -41,7 +44,7 @@
     <ClCompile Include="..\RenderEngine\RenderData.cpp" />
     <ClCompile Include="..\RenderEngine\RenderResourceFactory.cpp" />
     <ClCompile Include="..\RenderEngine\SimpleGLSLContainer.cpp" />
-    <ClCompile Include="..\Scene\tiny_obj_loader.cc" />
+    <ClCompile Include="..\Scene\Model.cpp" />
     <ClCompile Include="..\Scripting\ScriptEnvironment.cpp" />
     <ClCompile Include="..\Scripting\ScriptFactory.cpp" />
   </ItemGroup>
@@ -50,6 +53,7 @@
     <ClInclude Include="..\Common\Debug.h" />
     <ClInclude Include="..\Common\defines.h" />
     <ClInclude Include="..\Common\ErrorNotify.h" />
+    <ClInclude Include="..\Common\Utility.h" />
     <ClInclude Include="..\Concurrency\atomics.h" />
     <ClInclude Include="..\Concurrency\BitLock.h" />
     <ClInclude Include="..\Concurrency\JobGroup.h" />
@@ -59,20 +63,26 @@
     <ClInclude Include="..\Concurrency\ReadWriteLock.h" />
     <ClInclude Include="..\Concurrency\Job.h" />
     <ClInclude Include="..\Concurrency\JobDecoder.h" />
+    <ClInclude Include="..\Concurrency\AsyncResource.h" />
     <ClInclude Include="..\Concurrency\Semaphore.h" />
     <ClInclude Include="..\Containers\Array.h" />
     <ClInclude Include="..\Containers\CyclicConcurrentQueue.h" />
+    <ClInclude Include="..\Containers\CyclicQueue.h" />
+    <ClInclude Include="..\Containers\CyclicQueue.hpp" />
     <ClInclude Include="..\Maths\ks_Maths.h" />
     <ClInclude Include="..\Memory\DataPointer.h" />
     <ClInclude Include="..\Memory\DataPointer.hpp" />
     <ClInclude Include="..\Memory\FrameAllocator.h" />
     <ClInclude Include="..\Memory\ThreadStackAllocator.h" />
     <ClInclude Include="..\Profiling\Trace.h" />
+    <ClInclude Include="..\Reflection\Delegate.h" />
+    <ClInclude Include="..\Reflection\Delegate.hpp" />
     <ClInclude Include="..\Reflection\EnumReflector.h" />
     <ClInclude Include="..\Reflection\EnumString.h" />
     <ClInclude Include="..\Reflection\DataProperty.h" />
     <ClInclude Include="..\Reflection\DataProperty.hpp" />
     <ClInclude Include="..\Reflection\Reflector.h" />
+    <ClInclude Include="..\Reflection\ReflObject.h" />
     <ClInclude Include="..\Reflection\TypeUID.h" />
     <ClInclude Include="..\RenderEngine\GLRenderer.h" />
     <ClInclude Include="..\RenderEngine\GPUBuffer.h" />
@@ -81,6 +91,7 @@
     <ClInclude Include="..\RenderEngine\RenderData.h" />
     <ClInclude Include="..\RenderEngine\RenderResourceFactory.h" />
     <ClInclude Include="..\RenderEngine\SimpleShaderContainer.h" />
+    <ClInclude Include="..\Scene\Model.h" />
     <ClInclude Include="..\Scene\tiny_obj_loader.h" />
     <ClInclude Include="..\Scripting\Core.h" />
     <ClInclude Include="..\Scripting\ScriptEnvironment.h" />
