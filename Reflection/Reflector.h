@@ -18,8 +18,7 @@
 #ifndef REFLECTOR_H
 #define REFLECTOR_H
 
-#include <type_traits>
-#include "TypeUID.h"
+#include "defines.h"
 
 namespace ks{
 

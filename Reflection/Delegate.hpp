@@ -102,6 +102,10 @@ namespace ks {
 		return ret;
 	}
 
+	FI_HEADER const char* FI_CLASSNAME::Typename() const { return TypeUID<INST>::Typename(); }
+
+	FI_HEADER u32 FI_CLASSNAME::TypeID() const { return TypeUID<INST>::TypeID(); }
+
 
 	//////////////////////////////////////////////////////////////////////////
 	// IFuncInvoker
@@ -118,7 +122,17 @@ namespace ks {
 		template<typename FN>
 		IFuncInvoker* Create(const char* pName, FN pFunc)
 		{
+			// TODO: find way to placement new since we know all FuncInvokers are always 4 bytes (8 in debug) in x86.
+			// potentially allocate buffer from invoker registry, conversely
+			// however bear in mind vtable size.
 			return new FuncInvoker<INST, FN, RETURN_TYPE, NARGS>(pName, pFunc);
+		}
+
+		template<typename FN>
+		IFuncInvoker* Create(const char* pName, FN pFunc, IFuncInvoker::PlacementBuffer& pPlacementBuffer)
+		{
+			static_assert(sizeof(IFuncInvoker::PlacementBuffer) == sizeof(FuncInvoker<INST, FN, RETURN_TYPE, NARGS>), "memory mismatch");
+			return new(*pPlacementBuffer)FuncInvoker<INST, FN, RETURN_TYPE, NARGS>(pName, pFunc);
 		}
 	};
 
@@ -148,6 +162,12 @@ namespace ks {
 		auto inv = GetFIFactory(pFunc).Create(pName, pFunc);
 		InvokerRegistry::Add(inv);
 		return inv;
+	}
+
+	template<typename T>
+	IFuncInvoker* IFuncInvoker::Create(const char* pName, T pFunc, PlacementBuffer& pPlacementBuffer)
+	{
+		return GetFIFactory(pFunc).Create(pName, pFunc, pPlacementBuffer);	// user-managed...no need to register
 	}
 }
 

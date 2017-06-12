@@ -25,7 +25,9 @@
 #define KS_DELEGATE_H
 
 namespace ks {
-	
+
+#define KSFI_HAVE_DEBUG_NAME			0	//_DEBUG
+
 	typedef DataProperty	Any;
 
 	class IFuncInvoker
@@ -43,6 +45,12 @@ namespace ks {
 #define FUNC4 RETURN_TYPE (INST::*pFunc)(ARG1, ARG2, ARG3, ARG4)
 #define FUNC5 RETURN_TYPE (INST::*pFunc)(ARG1, ARG2, ARG3, ARG4, ARG5)
 
+#if KSFI_HAVE_DEBUG_NAME
+#define FUNC_INVOKER_SIZE	(sizeof(uintptr_t) * 3)
+#else
+#define FUNC_INVOKER_SIZE	(sizeof(uintptr_t) * 2)
+#endif
+
 	public:
 		virtual ~IFuncInvoker()				{}
 
@@ -53,8 +61,20 @@ namespace ks {
 		virtual Any operator()(void* pClass, Any& arg1, Any& arg2, Any& arg3, Any& arg4) = 0;
 		virtual Any operator()(void* pClass, Any& arg1, Any& arg2, Any& arg3, Any& arg4, Any& arg5) = 0;
 
+		virtual const char* Typename() const = 0;
+		virtual u32 TypeID() const = 0;
+
+		struct PlacementBuffer
+		{
+			char data[FUNC_INVOKER_SIZE];
+			char* operator*() { return data; }
+		};
+
 		template<typename T>
 		static IFuncInvoker* Create(const char* pName, T pFunc);
+
+		template<typename T>
+		static IFuncInvoker* Create(const char* pName, T pFunc, PlacementBuffer& pPlacementBuffer);
 	};
 
 	struct void_tag {};		// for void return methods
@@ -65,6 +85,7 @@ namespace ks {
 	template<typename T, bool B>
 	struct dtag {};
 
+	// partial specialisations
 	template<>				struct dtag<void, true>		{ typedef void_tag type; };
 	template<>				struct dtag<void, false>	{ typedef error_tag type; };
 	template<typename T>	struct dtag<T, true>		{ typedef value_tag type; };
@@ -76,8 +97,6 @@ namespace ks {
 	FI_HEADER
 	class FuncInvoker : public IFuncInvoker
 	{
-#define KSFI_HAVE_DEBUG_NAME			0	//_DEBUG
-
 #define FI_CLASSNAME	FuncInvoker<INST, TFUNC, RETURN_TYPE, NARGS>
 
 	public:
@@ -95,30 +114,34 @@ namespace ks {
 #endif
 		}
 
-		Any operator()(void* pClass) override
+		inline Any operator()(void* pClass) override
 		{
 			return resolveDispatch((INST*)pClass, dtag<RETURN_TYPE, NARGS == 0>::type());
 		}
-		Any operator()(void* pClass, Any& arg1) override
+		inline Any operator()(void* pClass, Any& arg1) override
 		{
 			return resolveDispatch(arg1, (INST*)pClass, dtag<RETURN_TYPE, NARGS == 1>::type());
 		}
-		Any operator()(void* pClass, Any& arg1, Any& arg2) override
+		inline Any operator()(void* pClass, Any& arg1, Any& arg2) override
 		{
 			return resolveDispatch(arg1, arg2, (INST*)pClass, dtag<RETURN_TYPE, NARGS == 2>::type());
 		}
-		Any operator()(void* pClass, Any& arg1, Any& arg2, Any& arg3) override
+		inline Any operator()(void* pClass, Any& arg1, Any& arg2, Any& arg3) override
 		{
 			return resolveDispatch(arg1, arg2, arg3, (INST*)pClass, dtag<RETURN_TYPE, NARGS == 3>::type());
 		}
-		Any operator()(void* pClass, Any& arg1, Any& arg2, Any& arg3, Any& arg4) override
+		inline Any operator()(void* pClass, Any& arg1, Any& arg2, Any& arg3, Any& arg4) override
 		{
 			return resolveDispatch(arg1, arg2, arg3, arg4, (INST*)pClass, dtag<RETURN_TYPE, NARGS == 4>::type());
 		}
-		Any operator()(void* pClass, Any& arg1, Any& arg2, Any& arg3, Any& arg4, Any& arg5) override
+		inline Any operator()(void* pClass, Any& arg1, Any& arg2, Any& arg3, Any& arg4, Any& arg5) override
 		{
 			return resolveDispatch(arg1, arg2, arg3, arg4, arg5, (INST*)pClass, dtag<RETURN_TYPE, NARGS == 5>::type());
 		}
+
+		const char* Typename() const override;
+
+		u32 TypeID() const override;
 
 	private:
 		TFUNC					mFunc;
@@ -163,7 +186,7 @@ namespace ks {
 	// InvokerRegistry
 	// Helps keep track of all IFuncInvoker(s) so they can be cleaned up on program exit
 	//////////////////////////////////////////////////////////////////////////
-	class InvokerRegistry : public Array< IFuncInvoker* >
+	class InvokerRegistry : private Array< IFuncInvoker* >
 	{
 	private:
 		InvokerRegistry();
