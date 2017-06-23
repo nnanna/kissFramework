@@ -28,6 +28,7 @@ SOFTWARE.
 #define CYCLIC_QUEUE_HPP
 
 #include "CyclicQueue.h"
+#include "defines.h"
 #include <Concurrency\atomics.h>
 
 namespace ks {
@@ -51,19 +52,15 @@ namespace ks {
 	template<typename T>
 	typename CyclicQueue<T>::queue_item CyclicQueue<T>::dequeue()
 	{
-#if 0
-		EnterCriticalSection( &mPopCS );
-		bool isValid = mReadHead != mTail;
-		queue_item<T> qitem( std::move(mItems[ mReadHead ]), isValid );
+		CyclicQueue<T>::queue_item q;
+		dequeue(q);
+		return q;
+	}
 
-		if( isValid )
-		{
-			mReadHead	= next(mReadHead);
-			mWriteHead[ mReadHead ] = 1;
-		}
-		LeaveCriticalSection( &mPopCS );
-
-#else
+		
+	template<typename T>
+	void CyclicQueue<T>::dequeue(typename CyclicQueue<T>::queue_item& qitem)
+	{
 		bool isValid(false);
 		ksU32 index(0), nextHead(0);
 		do
@@ -78,12 +75,10 @@ namespace ks {
 			YieldProcessor();
 		}
 
-		queue_item qitem( std::move(mItems[ index ]), isValid );													// grab data
+		qitem = queue_item(ks::move(mItems[index]), isValid);													// grab data
 
 		WRITE_BARRIER;
-		if(isValid)	mWriteHead[ index ]	= 0;																		// release index
-#endif
-		return qitem;
+		if(isValid)	mWriteHead[ index ]	= 0;																	// release index
 	}
 
 
@@ -92,13 +87,12 @@ namespace ks {
 	{
 		T* handle(nullptr);
 
-		ksU32 tail	= atomic_increment(&mTail) - 1;
-		tail		%= mCapacity;
-		ksU32 id	= mWriteHead[ tail ]++;
+		const ksU32 tail	= (atomic_increment(&mTail) - 1) % mCapacity;	// tail potentially overwrites head :(
+		ksU32 id			= mWriteHead[ tail ]++;
 
 		if( id == 0 )
 		{
-			mItems[ tail ]		= std::move( pVal );
+			mItems[ tail ]		= ks::move( pVal );
 			WRITE_BARRIER;
 			handle				= mItems + tail;
 			mWriteHead[ tail ]	= 2;
@@ -106,14 +100,13 @@ namespace ks {
 		else
 		{
 			atomic_decrement(&mTail);
-			KS_ASSERT( 0 && "push_back failed. You may need to increase the capacity of this CyclicQueue<T>." );
+			KS_ASSERT( 0 && "enqueue failed. You need to increase the capacity of this CyclicQueue<T>." );
 		}
 
 		return handle;
 	}
 
-/*@}*/
-}	//namespace ks
+}
 
 
 #endif

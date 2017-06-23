@@ -78,6 +78,8 @@ namespace ks {
 
 		queue_item dequeue();
 
+		void dequeue(queue_item& q);
+
 		const T* const enqueue(T&& pVal);
 
 		bool empty() const					{ return mReadHead == mTail; }
