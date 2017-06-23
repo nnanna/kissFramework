@@ -164,6 +164,45 @@ uint32_t crc32buf(const char *buf)
 		  oldcrc32 = UPDC32(*len, oldcrc32);
       }
 
-      return ~oldcrc32;
-      
+      return ~oldcrc32;      
+}
+
+
+uint16_t xor_fold(uint32_t i)
+{
+	uint16_t hash = (uint16_t)(i & 0xFFFF);
+	hash ^= (uint16_t)((i >> 16) & 0xFFFF);
+
+	return hash;
+}
+
+uint16_t xor_fold(uint64_t i)
+{
+	uint16_t hash = (uint16_t)(i & 0xFFFF);
+	hash ^= (uint16_t)((i >> 16) & 0xFFFF);
+	hash ^= (uint16_t)((i >> 32) & 0xFFFF);
+	hash ^= (uint16_t)((i >> 48) & 0xFFFF);
+
+	return hash;
+}
+
+unsigned fnv_hash(unsigned char *key, int len)
+{
+#define FNV_PRIME1	2166136261
+#define FNV_PRIME2	16777619
+	unsigned char *p = key;
+	unsigned h = FNV_PRIME1;
+
+	for (int i = 0; i < len; ++i)
+	{
+		h = (h ^ p[i]) * FNV_PRIME2;
+	}
+	return h;
+}
+
+unsigned fnv_hash16(unsigned char *data, int data_len)
+{
+#define MASK_16 0x0000ffff
+	unsigned hash = fnv_hash(data, data_len);
+	return (hash >> 16) ^ (hash & MASK_16);
 }
