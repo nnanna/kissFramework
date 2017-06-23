@@ -206,20 +206,26 @@ namespace ks
 		template<CCQMode mode, bool isPowerOfTwo>
 		void dequeue(queue_item& qitem)
 		{
-			ksU32 index(0), nextHead(0), spin_count(0);
+			ksU32 index(0), nextHead(0);
 			bool available(false);
 			do
 			{
 				index = mReadHead;
 				nextHead = next<isPowerOfTwo>(index);
 				available = !empty();
-			} while (available && ks::fail_compare_swap<mode>(mReadHead, index, nextHead) && conditional_yield(spin_count));
+			} while (available && ks::fail_compare_swap<mode>(mReadHead, index, nextHead));
 
 			qitem	= queue_item(ks::move(mItems[index]), available);
 
-			while (available && ks::fail_compare_swap<mode>(mWriteHead, index, nextHead))
+			ksU32 cachedWriteHead(mWriteHead), spin_count(0);
+			while (available && (index != cachedWriteHead || ks::fail_compare_swap<mode>(mWriteHead, index, nextHead)))
 			{
-				ksYieldThread;
+				static volatile ksU32 MAX_CONTENTIONS(2);
+				const ksU32 priority_distance = ((index - cachedWriteHead) + mCapacity) % mCapacity;
+				if ( priority_distance > MAX_CONTENTIONS )
+					conditional_yield(spin_count);
+				
+				cachedWriteHead = mWriteHead;
 			}
 		}
 
@@ -234,13 +240,11 @@ namespace ks
 		inline bool conditional_yield(ksU32& spin_count)
 		{
 			// http://www.codeproject.com/Articles/184046/Spin-Lock-in-C
-			if (spin_count++)
-			{
-				if (spin_count < CONTEXT_SWITCH_LATENCY)
-					ksYieldProcessor;
-				else
-					ksYieldThread;
-			}
+			if ((++spin_count % CONTEXT_SWITCH_LATENCY) == 0)
+				ksYieldProcessor;
+			else
+				ksYieldThread;
+
 			return true;	// only returns bool so it can be used as a condition on loop 'headers'
 		}
 
