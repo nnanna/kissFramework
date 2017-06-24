@@ -140,8 +140,8 @@ namespace ks{
 #if SHIPPING_BUILD
 		pReload		= false;
 #else
-		static volatile bool FORCE_GENERATE_DEBUG_LIBS(false);
-		if (pReload & FORCE_GENERATE_DEBUG_LIBS)
+		static volatile bool FORCE_GENERATE_DEBUG_LIBS(true);
+		if (pReload || FORCE_GENERATE_DEBUG_LIBS)
 			version		= ++mVersioning;
 #endif
 
@@ -212,7 +212,7 @@ namespace ks{
 		cmd				+= "/DSCRIPT_BUILD=1 ";
 #endif
 #if _DEBUG
-		cmd				+= "/DDEBUG_VERSION /D_DEBUG ";
+		cmd				+= "/DDEBUG_VERSION /D_DEBUG /DSCRIPT_COMPILE ";
 #endif
 
 		// target cpp file.
