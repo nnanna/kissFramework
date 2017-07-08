@@ -30,7 +30,7 @@ namespace ks {
 	////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// FORWARD DECLS
 	template<typename T>
-	class CyclicConcurrentQueue;
+	class CyclicQueue;
 
 	class Semaphore;
 	struct JSThread;
@@ -66,7 +66,7 @@ namespace ks {
 
 		void Wait();
 
-		CyclicConcurrentQueue<Job>*	mJobQueue;
+		CyclicQueue<Job>*	mJobQueue;
 		Array<JSThread*>			mWorkerThreads;
 		Array<JSEventHandle*>		mCompletionEvents;
 		ksU32						mFlags;

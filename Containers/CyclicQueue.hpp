@@ -35,7 +35,7 @@ namespace ks {
 
 
 	template<typename T>
-	CyclicQueue<T>::CyclicQueue( const ksU32 pCapacity ) : mReadHead(0), mWriteHead(0), mTail(0), mItems( nullptr ), mCapacity( pCapacity + cq_caret_buffer )
+	CyclicQueue<T>::CyclicQueue( const ksU32 pCapacity ) : mReadHead(0), mWriteHead(0), mTail(0), mItems( nullptr ), mCapacity( pCapacity )
 	{
 		mItems		= new T[ mCapacity ];
 		mWriteHead	= new char[ mCapacity ];
@@ -62,45 +62,80 @@ namespace ks {
 	void CyclicQueue<T>::dequeue(typename CyclicQueue<T>::queue_item& qitem)
 	{
 		bool isValid(false);
-		ksU32 index(0), nextHead(0);
+		ksU32 index(0);
 		do
 		{
 			index		= mReadHead;
-			nextHead	= next( index );
-			isValid		= (index != (mTail % mCapacity)); //(mWriteHead[ index ] != 0);	//
-		} while ( isValid && atomic_compare_and_swap( &mReadHead, index, nextHead ) != index );	// acquire index
+			isValid		= index != mTail;
+		} while ( isValid && atomic_compare_and_swap( &mReadHead, index, index + 1 ) != index );	// acquire index
 
-		while (isValid && mWriteHead[index] != 2)
+		index %= mCapacity;
+
+		while (isValid && mWriteHead[index] != 1)
 		{
-			YieldProcessor();
+			ksYieldThread;
 		}
 
-		qitem = queue_item(ks::move(mItems[index]), isValid);													// grab data
+		qitem = queue_item(ks::move(mItems[index]), isValid);		// grab data
 
 		WRITE_BARRIER;
-		if(isValid)	mWriteHead[ index ]	= 0;																	// release index
+		if(isValid)
+		{
+			KS_ASSERT(mWriteHead[index] == 1);
+			mWriteHead[ index ]	= 0;								// release index
+		}
 	}
 
 
 	template<typename T>
-	const T* const CyclicQueue<T>::enqueue(T&& pVal)
+	T* const CyclicQueue<T>::enqueue(T&& pVal)
 	{
 		T* handle(nullptr);
-
+#if CCQ_HAS_GUARANTEED_CAPACITY
 		const ksU32 tail	= (atomic_increment(&mTail) - 1) % mCapacity;	// tail potentially overwrites head :(
-		ksU32 id			= mWriteHead[ tail ]++;
+#else
+		ksU32 tail(0);
+		do
+		{
+			tail		= mTail;
+		} while (mWriteHead[tail % mCapacity] == 0 && atomic_compare_and_swap(&mTail, tail, tail+1) != tail);
+		tail %= mCapacity;
+#endif
 
-		if( id == 0 )
+		if (mWriteHead[tail] == 0)
 		{
 			mItems[ tail ]		= ks::move( pVal );
 			WRITE_BARRIER;
+			mWriteHead[ tail ]	= 1;
 			handle				= mItems + tail;
-			mWriteHead[ tail ]	= 2;
 		}
 		else
 		{
+#if CCQ_HAS_GUARANTEED_CAPACITY
 			atomic_decrement(&mTail);
+#endif
 			KS_ASSERT( 0 && "enqueue failed. You need to increase the capacity of this CyclicQueue<T>." );
+		}
+
+		return handle;
+	}
+
+
+	template<typename T>
+	T* const CyclicQueue<T>::enqueue_singlethreaded(T&& pVal)
+	{
+		T* handle(nullptr);
+		const ksU32 tail = ++mTail % mCapacity;
+		if (mWriteHead[tail] == 0)
+		{
+			mItems[tail] = ks::move(pVal);
+			WRITE_BARRIER;
+			handle = mItems + tail;
+			mWriteHead[tail] = 1;
+		}
+		else
+		{
+			KS_ASSERT(0 && "enqueue failed. You need to increase the capacity of this CyclicQueue<T>.");
 		}
 
 		return handle;

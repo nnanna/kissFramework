@@ -27,7 +27,7 @@ namespace ks {
 	JobHandle::JobHandle() : mJob(nullptr), mJobID(UIDGenerator::INVALID_UID)
 	{}
 
-	JobHandle::JobHandle(const Job* const pJob) : mJob(pJob), mJobID(mJob->UID())
+	JobHandle::JobHandle(const Job* const pJob) : mJob(pJob), mJobID(pJob ? pJob->UID() : UIDGenerator::INVALID_UID)
 	{}
 
 	JobState JobHandle::Cancel()

@@ -19,7 +19,7 @@
 
 #include <Concurrency\JobScheduler.h>
 #include <Concurrency\Semaphore.h>
-#include <Containers\CyclicConcurrentQueue.h>
+#include <Containers\CyclicQueue.hpp>
 #include <Profiling\Trace.h>
 #include <thread>
 
@@ -66,17 +66,17 @@ namespace ks {
 
 	struct JSThread
 	{
-		JSThread(JobScheduler* pArg1, CyclicConcurrentQueue<Job>* pArg2, ksU32 worker_index)
+		JSThread(JobScheduler* pArg1, CyclicQueue<Job>* pArg2, ksU32 worker_index)
 			: mThread{ ThreadRoutine, pArg1, pArg2, worker_index }
 		{
 			mThread.detach();		// gotta manage its lifetime ourselves
 		}
 
-		static void ThreadRoutine(JobScheduler* context, CyclicConcurrentQueue<Job>* queue, const ksU32 worker_index)
+		static void ThreadRoutine(JobScheduler* context, CyclicQueue<Job>* queue, const ksU32 worker_index)
 		{
 			JSEventHandle* jsevent = context->mCompletionEvents[worker_index];
 
-			CyclicConcurrentQueue<Job>::queue_item job;
+			CyclicQueue<Job>::queue_item job;
 			while (context->Running())
 			{
 				context->Wait();
@@ -108,7 +108,7 @@ namespace ks {
 
 		mFlags |= JS_FLAG_RUNNING;
 
-		mJobQueue		= new CyclicConcurrentQueue<Job>(pMaxNumJobs);
+		mJobQueue		= new CyclicQueue<Job>(pMaxNumJobs);
 		mSemaphore		= new Semaphore();
 
 		for (ksU32 i = 0; i < pNumThreads; ++i)

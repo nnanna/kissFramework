@@ -1,7 +1,7 @@
 #ifndef DEBUG_H
 #define DEBUG_H
 
-#define KS_ENABLE_ASSERTS	defined _DEBUG// | 1
+#define KS_ENABLE_ASSERTS	!FINAL_BUILD
 
 #if KS_ENABLE_ASSERTS
 #define KS_ASSERT(expr)		\

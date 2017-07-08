@@ -80,30 +80,25 @@ namespace ks {
 
 		void dequeue(queue_item& q);
 
-		const T* const enqueue(T&& pVal);
+		T* const enqueue(T&& pVal);
+
+		T* const enqueue_singlethreaded(T&& pVal);
 
 		bool empty() const					{ return mReadHead == mTail; }
-		bool filled() const					{ return mWriteHead[ next(mTail) ] == 1; }
 		void clear()						{ mReadHead = mTail = 0; }
 
 	private:
-		ksU32	next( ksU32 pFrom ) const	{ return ++pFrom % mCapacity; }
-
 		ksU32				mReadHead;
 		char				pad0[CACHE_LINE_SIZE - sizeof(ksU32)];		// eliminates false sharing between indices
-		char*				mWriteHead;
+		char*				mWriteHead;									// per slot 'bloated bitfield' @TODO: still prone to false sharing
 		char				pad1[CACHE_LINE_SIZE - sizeof(char*)];
 		ksU32				mTail;
 		char				pad2[CACHE_LINE_SIZE - sizeof(ksU32)];
 		T*					mItems;
 		const ksU32			mCapacity;
 
-
-#define cq_caret_buffer		1				// this (allocates one extra item) ensures tail never overwrites head, so only head can catch up to tail.
-
 	};
-/*@}*/
-}	//namespace BZ
 
+}
 
 #endif
