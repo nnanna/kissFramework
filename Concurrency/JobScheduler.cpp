@@ -121,10 +121,19 @@ namespace ks {
 	JobScheduler::~JobScheduler()
 	{
 		mFlags = 0;
-		for (u32 n = 0; n < mWorkerThreads.size(); ++n)
-			Signal();
 
-		ksSleepMilli(30);		// @TODO: don't use glut - it makes you do bad things
+		while (*mJobQueue->dequeue());						// clear all pending jobs. safer than calling clear()
+
+		mSemaphore->signal(mWorkerThreads.size());			// wake all worker threads
+
+		for (ksU32 i = 0; i < mCompletionEvents.size(); ++i)	// complete any jobs already running
+		{
+			ksU32 jobID = mCompletionEvents[i]->JobID();
+			if(jobID)
+				mCompletionEvents[i]->Wait(jobID);
+		}
+
+		ksSleepMilli(60);		// @TODO: don't use glut - it makes you do bad things
 
 		for (auto i : mWorkerThreads)
 			delete i;

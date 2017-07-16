@@ -149,7 +149,7 @@ namespace ks {
 		if (atomic_decrement(&mNumJobs) == 0)
 		{
 			mBusy->Notify();
-			atomic_set(&mJobIDs, 0);
+			//atomic_set(&mJobIDs, 0);	// why set it back to zero?!
 		}
 	}
 
