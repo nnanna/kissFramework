@@ -86,18 +86,13 @@ namespace ks {
 
 	ReadWriteLock::ReadWriteLock() : mMutualExclusivityMask(0), mWritingThread(0), mReentrancyCount(0)
 	{
-		mEvent = (uintptr_t)CreateEvent(
-			NULL,               // default security attributes
-			TRUE,				// manual-reset event
-			FALSE,				// initial state is nonsignaled
-			nullptr				// object name
-			);
+		mEvent = (uintptr_t)new Event(true);
 	}
 
 	ReadWriteLock::~ReadWriteLock()
 	{
 		KS_ASSERT(mMutualExclusivityMask == 0);
-		CloseHandle((HANDLE)mEvent);
+		delete (Event*)mEvent;
 	}
 
 	ReadGuard ReadWriteLock::Read()
@@ -112,11 +107,11 @@ namespace ks {
 				return ReadGuard(this);
 			}
 
-			WaitForSingleObject((HANDLE)mEvent, 1);
+			((Event*)mEvent)->Wait(1); //WaitForSingleObject((HANDLE)mEvent, 1);
 			mask = mMutualExclusivityMask;
 		}
 		if ((omask & READ_COUNT_MASK) == 1)		// only 'first' reader should block the event
-			ResetEvent((HANDLE)mEvent);
+			((Event*)mEvent)->SetState(true); //ResetEvent((HANDLE)mEvent);
 
 		return ReadGuard(this);
 	}
@@ -146,9 +141,9 @@ namespace ks {
 				return WriteGuard(this);
 			}
 
-			WaitForSingleObject((HANDLE)mEvent, INFINITE);
+			((Event*)mEvent)->Wait(); // WaitForSingleObject((HANDLE)mEvent, INFINITE);
 		}
-		ResetEvent((HANDLE)mEvent);
+		((Event*)mEvent)->SetState(true);	// ResetEvent((HANDLE)mEvent);
 
 		KS_ASSERT(mWritingThread == 0 || mWritingThread == threadID);
 		mWritingThread = threadID;
@@ -178,14 +173,14 @@ namespace ks {
 				KS_ASSERT(!"ReadWriteLockException::eAlreadyUnlocked");
 			}
 
-			SetEvent((HANDLE)mEvent);
+			((Event*)mEvent)->Notify(); // SetEvent((HANDLE)mEvent);
 		}
 	}
 
 	void ReadWriteLock::Release(ReadGuard&)
 	{
 		if (atomic_decrement(&mMutualExclusivityMask) == 0)
-			SetEvent((HANDLE)mEvent);
+			((Event*)mEvent)->Notify(); // SetEvent((HANDLE)mEvent);
 	}
 
 }

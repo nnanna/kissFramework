@@ -18,7 +18,7 @@ namespace ks {
 
 		void signal(int count = 1);
 
-		void wait();
+		bool wait(unsigned timeoutMS = 0xffffffff);	// returns true if was signaled 
 
 	private:
 		void destroy();
@@ -26,6 +26,7 @@ namespace ks {
 		Semaphore& operator=(const Semaphore&);
 
 		size_t	mCtx;
+		int		mNumSignals;
 	};
 
 
@@ -35,7 +36,7 @@ namespace ks {
 		Event(bool state = true);
 		void SetState(bool state);
 		void Notify();
-		void Wait();
+		void Wait(int timeoutMS = 0xffffffff);
 
 	private:
 		unsigned	mState;

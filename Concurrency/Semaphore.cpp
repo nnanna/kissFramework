@@ -4,6 +4,7 @@
 #include "Semaphore.h"
 #include "atomics.h"
 #include "defines.h"
+#include <Profiling\Trace.h>
 #if KERNEL_SEMAPHORE
 #include <Windows.h>
 #else
@@ -57,7 +58,7 @@ namespace ks {
 
 #else
 
-	Semaphore::Semaphore()
+	Semaphore::Semaphore() : mNumSignals(0)
 	{
 		mCtx = (uintptr_t)CreateSemaphore(NULL, 0, 0x7fffffff, NULL);
 	}
@@ -74,12 +75,25 @@ namespace ks {
 
 	void Semaphore::signal(int count /*= 1*/)
 	{
-		ReleaseSemaphore((HANDLE)mCtx, count, 0);
+		TRACE_FUNC();
+		if ((int)atomic_add((u32*)&mNumSignals, count) <= 0)	// avoid kernel transaction if no waiting threads
+		{
+			ReleaseSemaphore((HANDLE)mCtx, count, 0);
+		}
 	}
 
-	void Semaphore::wait()
+	bool Semaphore::wait(unsigned timeout /*= 0xffffffff*/)
 	{
-		WaitForSingleObject((HANDLE)mCtx, INFINITE);
+		TRACE_FUNC();
+		if ((int)atomic_decrement((u32*)&mNumSignals) < 0)	// avoid kernel transaction if there's pending signals
+		{
+			if (WaitForSingleObject((HANDLE)mCtx, timeout) != WAIT_OBJECT_0)
+			{
+				atomic_increment((u32*)&mNumSignals);	// wait failed, rectify counter else it'll de-sync with kernel counter
+				return false;
+			}
+		}
+		return true;
 	}
 
 #endif
@@ -124,7 +138,7 @@ namespace ks {
 			mSem.signal(count);
 	}
 
-	void Event::Wait()
+	void Event::Wait(int timeoutMS /*= 0xffffffff*/)
 	{
 		unsigned val(0);
 		do
@@ -134,7 +148,8 @@ namespace ks {
 		
 		if ((val >> EVENT_STATE_BIT))
 		{
-			mSem.wait();
+			if (mSem.wait(timeoutMS) == false)
+				atomic_decrement(&mState);
 		}
 	}
 }
