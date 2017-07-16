@@ -99,6 +99,7 @@ namespace ks {
 
 	void TraceAPI::Init(const unsigned aizeInKB)
 	{
+#if KSTR_ENABLE_TRACING
 		if (mBuffer == nullptr)
 		{
 			unsigned sz = aizeInKB * 1024;
@@ -108,10 +109,12 @@ namespace ks {
 			mIndex		= 0;
 			InitTimer();
 		}
+#endif
 	}
 
 	void TraceAPI::Destroy()
 	{
+#if KSTR_ENABLE_TRACING
 		if (gTracingEnabled)
 		{
 			Stop(false);
@@ -120,6 +123,7 @@ namespace ks {
 		mCapacity = 0;
 		free(mBuffer);
 		mBuffer = nullptr;
+#endif
 	}
 
 	void TraceAPI::Start()
