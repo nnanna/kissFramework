@@ -80,6 +80,9 @@ namespace ks {
 
 		void dequeue(queue_item& q);
 
+		///
+		/// blocks if full
+		///
 		T* const enqueue(T&& pVal);
 
 		T* const enqueue_singlethreaded(T&& pVal);

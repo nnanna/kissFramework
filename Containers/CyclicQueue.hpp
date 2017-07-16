@@ -98,24 +98,14 @@ namespace ks {
 		do
 		{
 			tail		= mTail;
-		} while (mWriteHead[tail % mCapacity] == 0 && atomic_compare_and_swap(&mTail, tail, tail+1) != tail);
+		} while (mWriteHead[tail % mCapacity] != 0 || atomic_compare_and_swap(&mTail, tail, tail+1) != tail);
 		tail %= mCapacity;
 #endif
 
-		if (mWriteHead[tail] == 0)
-		{
-			mItems[ tail ]		= ks::move( pVal );
-			WRITE_BARRIER;
-			mWriteHead[ tail ]	= 1;
-			handle				= mItems + tail;
-		}
-		else
-		{
-#if CCQ_HAS_GUARANTEED_CAPACITY
-			atomic_decrement(&mTail);
-#endif
-			KS_ASSERT( 0 && "enqueue failed. You need to increase the capacity of this CyclicQueue<T>." );
-		}
+		mItems[tail]		= ks::move(pVal);
+		WRITE_BARRIER;
+		mWriteHead[tail]	= 1;
+		handle				= mItems + tail;
 
 		return handle;
 	}
