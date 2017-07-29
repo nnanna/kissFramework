@@ -60,19 +60,21 @@ namespace ks
 
 		GPUBuffer*		mIndexBuffer;
 
-		ks32			vertexSize;		// Specifies the number of coordinates per vertex. Must be 2, 3, or 4.
-
-		RENDERMODE		renderMode;
-
-		ks32			stride;
-
-		ks32			numIndices;
-
-		ks32			normOffset;
+		GPUBuffer*		mInstanceBuffer;
 
 		Material*		material;
 
 		const Matrix&	Transform;
+
+		RENDERMODE		renderMode;
+
+		u32				stride;
+
+		u32				numIndices;
+
+		u32				normOffset;
+
+		ksU8			vertexSize;		// Specifies the number of coordinates per vertex. Must be 2, 3, or 4.
 
 	};
 

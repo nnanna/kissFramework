@@ -51,6 +51,7 @@ typedef char			ksByte;
 typedef __int16			ks16;
 typedef unsigned __int16 ksU16;
 typedef unsigned __int16 u16;
+typedef unsigned __int8	ksU8;
 
 #if _DEBUG
 	#define if_ks_dbg	if

@@ -14,6 +14,7 @@
 #include "defines.h"
 #include "ErrorNotify.h"
 #include "GL/glew.h"
+#include "Debug.h"
 
 namespace ks {
 
@@ -22,9 +23,8 @@ namespace ks {
 
 	//=================================================================================================================
 
-	SimpleShaderContainer::SimpleShaderContainer() : mVertProgram(0), mFragProgram(0), mShaderProgram(0)
+	SimpleShaderContainer::SimpleShaderContainer(const char* filename) : mVertProgram(0), mFragProgram(0), mShaderProgram(0)
 	{
-
 		if (!_gShaderContext)
 		{
 			getStaticContext();
@@ -37,8 +37,8 @@ namespace ks {
 
 		// check for graphics card version supported @TODO
 
+		loadShader(filename);
 	}
-
 
 
 	//=================================================================================================================
@@ -201,9 +201,9 @@ namespace ks {
 
 	//=================================================================================================================
 
-	ShaderProgram SimpleShaderContainer::loadProgram(const char* name, const char* vp_filename, const char* fp_filename)
+	void SimpleShaderContainer::loadShader(const char* filename)
 	{
-		if (strncmp(mName, name, MAX_NAME) != 0)
+		if (strncmp(mName, filename, MAX_NAME) != 0)
 		{
 			if (mShaderProgram)
 			{
@@ -211,16 +211,46 @@ namespace ks {
 				mShaderProgram = NULL;
 			}
 
-			strcpy_s(mName, MAX_NAME, name);
+			strcpy_s(mName, MAX_NAME, filename);
 		}
 
 		if (!mShaderProgram)
 		{
-			getShaderFromFile(vp_filename, GL_VERTEX_SHADER);
-			getShaderFromFile(fp_filename, GL_FRAGMENT_SHADER);
-		}
+			static const char vShaderHeader[] = "#define VERT_SHADER_ENABLED 1\n";
+			static const char fShaderHeader[] = "#define FRAG_SHADER_ENABLED 1\n";
+			const int HEADER_LEN = sizeof(vShaderHeader);
+			KS_ASSERT(HEADER_LEN == sizeof(fShaderHeader) && "Both headers must be equal length!");
 
-		return mShaderProgram;
+			FILE *shaderFile;
+			int error = fopen_s(&shaderFile, filename, "rb");	//must read as binary to prevent problems from newline translation
+
+			if (error != 0)
+			{
+				ErrorNotify("file load failure");
+				return;
+			}
+
+			fseek(shaderFile, 0, SEEK_END);
+
+			long size = ftell(shaderFile);
+
+			fseek(shaderFile, 0, SEEK_SET);
+
+			char* text = new char[size + HEADER_LEN];
+
+			fread(text + HEADER_LEN - 1, size, 1, shaderFile);	// eat up header null termination
+
+			fclose(shaderFile);
+
+			text[size + (HEADER_LEN - 1)] = '\0';
+
+			memcpy_s(text, HEADER_LEN - 1, vShaderHeader, HEADER_LEN - 1);
+			loadProgram(text, nullptr, GL_VERTEX_SHADER);
+			memcpy_s(text, HEADER_LEN - 1, fShaderHeader, HEADER_LEN - 1);
+			loadProgram(text, nullptr, GL_FRAGMENT_SHADER);
+
+			delete[]text;
+		}
 	}
 
 	//=================================================================================================================
@@ -239,41 +269,6 @@ namespace ks {
 		}
 
 		return mShaderProgram;
-	}
-
-	char* SimpleShaderContainer::getShaderFromFile(const char* filename, ShaderProfile target)
-	{
-		FILE *shaderFile;
-
-		//must read files as binary to prevent problems from newline translation
-		int error = fopen_s(&shaderFile, filename, "rb");
-
-		if (error != 0)
-		{
-			ErrorNotify("file load failure");
-			return nullptr;
-		}
-
-		fseek(shaderFile, 0, SEEK_END);
-
-		long size = ftell(shaderFile);
-
-		fseek(shaderFile, 0, SEEK_SET);
-
-		char* text = new char[size + 1];
-
-		fread(text, size, 1, shaderFile);
-
-		fclose(shaderFile);
-
-		text[size] = '\0';
-
-		loadProgram(text, nullptr, target);
-
-		delete[]text;
-
-		return nullptr;
-
 	}
 
 	//=================================================================================================================

@@ -70,7 +70,7 @@ namespace ks {
 	{
 
 	public:
-		SimpleShaderContainer();
+		SimpleShaderContainer(const char* filename);
 
 		~SimpleShaderContainer();
 
@@ -85,12 +85,6 @@ namespace ks {
 
 		ShaderContext		getContext()	{ return SimpleShaderContainer::getStaticContext(); }
 
-		ShaderProgram		loadProgram(int numFiles, ...);
-
-		ShaderProgram		loadProgram(const char* name, const char* vp_filename, const char* fp_filename);
-
-		ShaderProgram		loadProgram(const char *filename, const char *entry, ShaderProfile profile);
-
 		ShaderProgram		getVertProgram() const	{ return mVertProgram; }
 
 		ShaderProgram		getFragProgram() const	{ return mFragProgram; }
@@ -100,8 +94,6 @@ namespace ks {
 
 		ShaderProfile		getFragProfile() const	{return mFragProfile;}
 #endif
-
-		char*				getShaderFromFile(const char* filename, ShaderProfile target);
 
 		void				registerConstant(ShaderKey& attrib);
 
@@ -151,6 +143,12 @@ namespace ks {
 
 
 	private:
+
+		void			loadShader(const char* filename);
+
+		ShaderProgram	loadProgram(int numFiles, ...);
+
+		ShaderProgram	loadProgram(const char *filename, const char *entry, ShaderProfile profile);
 
 		static ShaderContext	_gShaderContext;
 

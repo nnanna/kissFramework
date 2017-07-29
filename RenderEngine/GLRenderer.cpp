@@ -15,7 +15,6 @@
 #include "RenderResourceFactory.h"
 #include <Service.h>
 #include <RenderEngine\GL\glew.h>
-#include <Concurrency\Mutex.h>
 
 namespace ks {
 

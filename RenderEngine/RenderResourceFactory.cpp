@@ -55,7 +55,7 @@ namespace ks {
 
 	SimpleShaderContainer* RenderResourceFactory::findShader(const char* shader_name)
 	{
-		auto key = CRC32(shader_name);
+		ks32 key = CRC32(shader_name);
 		ShaderLibraryMap::iterator itr = sShaderLibrary.find(key);
 		return itr != sShaderLibrary.end() ? itr->second : nullptr;
 	}
@@ -63,19 +63,16 @@ namespace ks {
 
 	SimpleShaderContainer* RenderResourceFactory::findOrCreateShader(const char* shader_name)
 	{
-		auto key = CRC32(shader_name);
+		ks32 key = CRC32(shader_name);
 		ShaderLibraryMap::iterator itr = sShaderLibrary.find(key);
 		if (itr != sShaderLibrary.end())
 		{
 			return itr->second;
 		}
 
-		SimpleShaderContainer* shader = new SimpleShaderContainer();
+		SimpleShaderContainer* shader = new SimpleShaderContainer(shader_name);
 
 		// prepend and append filename directories and stuff like that here.
-		// @todo
-
-		// load shader here
 		// @todo
 
 

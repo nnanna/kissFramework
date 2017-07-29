@@ -7,13 +7,14 @@ namespace ks {
 	RenderData::RenderData(GPUBuffer* pVertexBuffer, GPUBuffer* pIndexBuffer, const Matrix& pTrans)
 		: mVertexBuffer(pVertexBuffer)
 		, mIndexBuffer(pIndexBuffer)
-		, vertexSize(0)
+		, mInstanceBuffer(nullptr)
+		, Transform(pTrans)
+		, material(nullptr)
 		, renderMode(ePoints)
 		, stride(0)
 		, numIndices(0)
 		, normOffset(0)
-		, material(nullptr)
-		, Transform(pTrans)
+		, vertexSize(0)
 	{}
 
 
@@ -21,6 +22,7 @@ namespace ks {
 	{
 		delete mVertexBuffer;
 		delete mIndexBuffer;
+		delete mInstanceBuffer;
 	}
 
 }
