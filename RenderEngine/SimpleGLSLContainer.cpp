@@ -15,6 +15,7 @@
 #include "ErrorNotify.h"
 #include "GL/glew.h"
 #include "Debug.h"
+#include <Memory\ThreadStackAllocator.h>
 
 namespace ks {
 
@@ -170,10 +171,12 @@ namespace ks {
 
 			glAttachShader(mShaderProgram, mVertProgram);
 			glAttachShader(mShaderProgram, mFragProgram);
-			// attrib locations have to be bound before linking, else weird shiz happens.
+#if SUPPORT_GL_1_2
+			// attrib locations have to be bound before linking, else weird shiz happens
 			// and it'll take you days before you even figure out why :(
 			glBindAttribLocation(mShaderProgram, SA_POSITION, SP_POS);
 			glBindAttribLocation(mShaderProgram, SA_NORMAL, SP_NOR);
+#endif
 			CHECK_GL_ERROR;
 			glLinkProgram(mShaderProgram);
 			CHECK_GL_ERROR;
@@ -232,11 +235,13 @@ namespace ks {
 
 			fseek(shaderFile, 0, SEEK_END);
 
-			long size = ftell(shaderFile);
+			const long size = ftell(shaderFile);
 
 			fseek(shaderFile, 0, SEEK_SET);
 
-			char* text = new char[size + HEADER_LEN];
+			mem::ThreadStackAllocator tsa(size + HEADER_LEN);
+
+			char* text = (char*)tsa.allocate();
 
 			fread(text + HEADER_LEN - 1, size, 1, shaderFile);	// eat up header null termination
 
@@ -248,8 +253,6 @@ namespace ks {
 			loadProgram(text, nullptr, GL_VERTEX_SHADER);
 			memcpy_s(text, HEADER_LEN - 1, fShaderHeader, HEADER_LEN - 1);
 			loadProgram(text, nullptr, GL_FRAGMENT_SHADER);
-
-			delete[]text;
 		}
 	}
 

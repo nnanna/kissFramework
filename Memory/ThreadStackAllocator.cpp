@@ -20,8 +20,7 @@
 #include "ThreadStackAllocator.h"
 #include <Concurrency\atomics.h>
 #include <Debug.h>
-#include <map>
-#include <mutex>
+#include <stdio.h>
 
 
 namespace ks
@@ -29,7 +28,14 @@ namespace ks
 	namespace mem {
 
 #define TSA_DIAGNOSTICS		(defined _DEBUG)
-#define TSA_MIN_STACK_SIZE	MEGABYTE
+
+#ifndef TSA_MIN_STACK_SIZE
+	#define TSA_MIN_STACK_SIZE	MEGABYTE
+#endif
+
+#ifndef TSA_MAX_NUM_THREAD_STACKS
+	#define TSA_MAX_NUM_THREAD_STACKS 8
+#endif
 
 	struct handle
 	{
@@ -58,51 +64,49 @@ namespace ks
 	};
 
 
+	ks_thread_local handle	tlsMemHandle = {};
+
 	struct ThreadStackPool
 	{
-		static void* allocate();
+		ThreadStackPool()
+			: mMappedMem{}
+			, mNumThreadStacks(0)
+		{}
 
-		static void release(void* ptr);
-
-		static void destroy();
-	};
-
-
-
-	static std::map<ThreadID, void*>		sMappedMem;
-	static std::mutex						sMapMtx;	// essential rare lock on map access. TODO: replace with criticalsection
-
-	ks_thread_local handle	tlsMemHandle	= {};
-
-	void* ThreadStackPool::allocate()
-	{
-		if (tlsMemHandle.mem == nullptr)
+		~ThreadStackPool()
 		{
-			tlsMemHandle.mem	= malloc(TSA_MIN_STACK_SIZE);
-			tlsMemHandle.size	= TSA_MIN_STACK_SIZE;
-
-			sMapMtx.lock();
-			sMappedMem[ GetCurrentThreadId() ] = tlsMemHandle.mem;
-			sMapMtx.unlock();
+			for (u32 i = 0; i < TSA_MAX_NUM_THREAD_STACKS && mMappedMem[i]; ++i)
+			{
+				free(mMappedMem[i]);
+				mMappedMem[i] = nullptr;
+			}
 		}
 
-		return tlsMemHandle.Map();
-	}
-
-	void ThreadStackPool::release(void* ptr)
-	{
-		tlsMemHandle.Unmap(ptr);
-	}
-
-	void ThreadStackPool::destroy()
-	{
-		sMapMtx.lock();
-		for (auto& i : sMappedMem)
+		void* allocate()
 		{
-			free(i.second);
+			const u32 index = (tlsMemHandle.mem == nullptr) ? atomic_increment(&mNumThreadStacks) - 1 : TSA_MAX_NUM_THREAD_STACKS;
+			if (index < TSA_MAX_NUM_THREAD_STACKS)
+			{
+				tlsMemHandle.mem = malloc(TSA_MIN_STACK_SIZE);
+				tlsMemHandle.size = TSA_MIN_STACK_SIZE;
+
+				mMappedMem[index] = tlsMemHandle.mem;
+			}
+
+			return tlsMemHandle.Map();
 		}
-		sMapMtx.unlock();
-	}
+
+		void release(void* ptr)
+		{
+			tlsMemHandle.Unmap(ptr);
+		}
+
+	private:
+		void*	mMappedMem[TSA_MAX_NUM_THREAD_STACKS];		// just so we can properly clean up allocations
+		u32		mNumThreadStacks;
+
+	}gThreadStackPool;
+
 
 	//////////////////////////////////////////////////////////////////////////////////////////////////////
 	// ThreadStackAllocator
@@ -116,7 +120,7 @@ namespace ks
 		{
 			if (tlsStackUsage == 0)
 			{
-				mMem = ThreadStackPool::allocate();
+				mMem = gThreadStackPool.allocate();
 			}
 			else if (tlsStackUsage + pCapacity <= tlsMemHandle.size)
 			{
@@ -127,7 +131,6 @@ namespace ks
 				printf("Thread stack out of mem, defaulting to heap. Consider resizing to %f MB", float(tlsStackUsage / MEGABYTE));
 				mMem = malloc(mCapacity);
 			}
-
 		}
 
 		tlsStackUsage += mCapacity;
@@ -143,7 +146,7 @@ namespace ks
 			}
 			else if ((tlsStackUsage - mCapacity) == 0)
 			{
-				ThreadStackPool::release(mMem);
+				gThreadStackPool.release(mMem);
 			}
 
 			tlsStackUsage -= mCapacity;
