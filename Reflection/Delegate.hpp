@@ -111,7 +111,7 @@ namespace ks {
 	// IFuncInvoker
 	// TODO: automatic type-deduction and argument forwarding -> unfold and const cast [done]
 	// one create function with SFINAE on return type. [done]
-	// FuncInvoker holds the generic function/method pointer data
+	// TFuncInvoker holds the generic function/method pointer data
 	// Higher level (user-facing) delegate holds the instance of the class.
 	// Preserve object type-safety as func interface abstracts to void*
 	// DataProperty could be the delegate? Hold pointer to static list of invokers?
@@ -125,14 +125,14 @@ namespace ks {
 			// TODO: find way to placement new since we know all FuncInvokers are always 4 bytes (8 in debug) in x86.
 			// potentially allocate buffer from invoker registry, conversely
 			// however bear in mind vtable size.
-			return new FuncInvoker<INST, FN, RETURN_TYPE, NARGS>(pName, pFunc);
+			return new TFuncInvoker<INST, FN, RETURN_TYPE, NARGS>(pName, pFunc);
 		}
 
 		template<typename FN>
-		IFuncInvoker* Create(const char* pName, FN pFunc, IFuncInvoker::PlacementBuffer& pPlacementBuffer)
+		IFuncInvoker* Create(const char* pName, FN pFunc, IFuncInvoker::PlacementBuffer& pUserManagedAllocationMem)
 		{
-			static_assert(sizeof(IFuncInvoker::PlacementBuffer) == sizeof(FuncInvoker<INST, FN, RETURN_TYPE, NARGS>), "memory mismatch");
-			return new(*pPlacementBuffer)FuncInvoker<INST, FN, RETURN_TYPE, NARGS>(pName, pFunc);
+			static_assert(sizeof(IFuncInvoker::PlacementBuffer) == sizeof(TFuncInvoker<INST, FN, RETURN_TYPE, NARGS>), "memory mismatch");
+			return new(*pUserManagedAllocationMem)TFuncInvoker<INST, FN, RETURN_TYPE, NARGS>(pName, pFunc);
 		}
 	};
 
@@ -157,11 +157,12 @@ namespace ks {
 
 
 	template<typename T>
-	IFuncInvoker* IFuncInvoker::Create(const char* pName, T pFunc)
+	IFuncInvoker::RegistryHandle IFuncInvoker::Create(const char* pName, T pFunc)
 	{
-		auto inv = GetFIFactory(pFunc).Create(pName, pFunc);
-		InvokerRegistry::Add(inv);
-		return inv;
+		RegistryHandle h;
+		h.Invoker		= GetFIFactory(pFunc).Create(pName, pFunc);
+		h.RegistryIndex = InvokerRegistry::Add(h.Invoker);
+		return h;
 	}
 
 	template<typename T>

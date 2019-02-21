@@ -5,9 +5,8 @@
 ///	@author		Nnanna Kama (2017)
 ///	@about		Class reflection and Delegate interface
 ///				Allows arbitrary hinding of delegates to class type
-///				Client code only required to implement one static method and one static member.
-///				T::InitBindings(BindingsMap) and T::MaxNumBindings
-///				compile-time allocated. easy to use and can bind any number of objects.
+///				Client code only required to implement one static method: T::InitBindings(BindingsMap)
+///				Easy to use and can bind any number of objects.
 ///				Class methods can be bound via BindingMap::Add() or ADD_BINDING macro.
 ///
 ///
@@ -26,24 +25,17 @@
 
 namespace ks {
 
-	// There's only one of this per class type via templated lazy-allocation in GetBindings().
+	// There's only one of this per class type via templated lazy-allocation
 	class BindingsMap
 	{
-		friend class ReflObject;
+		friend class ReflObject;		// clearance to access GetBindings()
 	public:
 		template <class T>
 		inline BindingsMap& Add(const char* pName, T pFunc)
 		{
-			if (mCaret < mNumBindings)
-			{
-				IFuncInvoker::PlacementBuffer placementBuffer;
-				IFuncInvoker::Create(pName, pFunc, placementBuffer);
-				Add(pName, placementBuffer);
-			}
-			else
-			{
-				KS_ASSERT(0 && "Bindings Full! T::MaxNumBindings needs to be higher");
-			}
+			auto registryHandle = IFuncInvoker::Create(pName, pFunc);
+			Add(registryHandle);
+
 			return *this;
 		}
 
@@ -61,26 +53,26 @@ namespace ks {
 
 		IFuncInvoker* At(u32 index) const;
 
+		// TODO
+		// void Optimise(); make local storage of bindings. index and sort hashes for faster access TODO
+
 	private:
-		char*	mAllocationBuffer;
-		u32*	mHashes;
+		u32		mHead;
 		u32		mNumBindings;
-		u32		mCaret;
+		//char*	mAllocationBuffer;	// for possible use with Optimise()
 
-		BindingsMap(char* pAllocationBuffer, u32* pHashBuffer, u32 pAllocationBufferSize);
+		BindingsMap();
 
-		void Add(const char* pName, IFuncInvoker::PlacementBuffer& pDelegate);
+		void Add(IFuncInvoker::RegistryHandle& rHandle);
 
 		template<class T>
 		static BindingsMap& GetBindings()
 		{
 			static char GBindingsBuffer[sizeof(BindingsMap)];
-			static char GBindingsBufferData[T::MaxNumBindings * FUNC_INVOKER_SIZE];
-			static u32 GHashBuffer[T::MaxNumBindings];
 			static BindingsMap* GBindings(nullptr);
 			if (GBindings == nullptr)
 			{
-				GBindings = new (GBindingsBuffer)BindingsMap(GBindingsBufferData, GHashBuffer, T::MaxNumBindings);
+				GBindings = new (GBindingsBuffer)BindingsMap();
 				T::InitBindings(*GBindings);
 			}
 

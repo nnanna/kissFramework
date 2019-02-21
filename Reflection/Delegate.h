@@ -32,6 +32,9 @@ namespace ks {
 
 	class IFuncInvoker
 	{
+		u32	mNameID;				// hash from NameString
+		u32	mRegistryIndex;
+
 #define HEADER_ARG0 template<typename INST, typename RETURN_TYPE>
 #define HEADER_ARG1	template<typename INST, typename RETURN_TYPE, typename ARG1>
 #define HEADER_ARG2	template<typename INST, typename RETURN_TYPE, typename ARG1, typename ARG2>
@@ -46,13 +49,20 @@ namespace ks {
 #define FUNC5 RETURN_TYPE (INST::*pFunc)(ARG1, ARG2, ARG3, ARG4, ARG5)
 
 #if KSFI_HAVE_DEBUG_NAME
-#define FUNC_INVOKER_SIZE	(sizeof(uintptr_t) * 3)
+#define FUNC_INVOKER_SIZE	((sizeof(u32) * 2) + (sizeof(uintptr_t) * 3))
 #else
-#define FUNC_INVOKER_SIZE	(sizeof(uintptr_t) * 2)
+#define FUNC_INVOKER_SIZE	((sizeof(u32) * 2) + (sizeof(uintptr_t) * 2))
 #endif
 
 	public:
-		virtual ~IFuncInvoker()				{}
+		IFuncInvoker(const char* pName);
+		virtual ~IFuncInvoker();
+
+		u32 GetNameID() const			{ return mNameID; }
+
+		u32 GetRegistryIndex() const	{ return mRegistryIndex; }
+
+		void SetRegistryIndex(u32 Index);
 
 		virtual Any operator()(void* pClass) = 0;
 		virtual Any operator()(void* pClass, Any& arg1) = 0;
@@ -70,13 +80,22 @@ namespace ks {
 			char* operator*() { return data; }
 		};
 
-		template<typename T>
-		static IFuncInvoker* Create(const char* pName, T pFunc);
+		struct RegistryHandle
+		{
+			IFuncInvoker* Invoker;
+			u32 RegistryIndex;
+		};
 
 		template<typename T>
-		static IFuncInvoker* Create(const char* pName, T pFunc, PlacementBuffer& pPlacementBuffer);
+		static RegistryHandle Create(const char* pName, T pFunc);
+
+		template<typename T>
+		static IFuncInvoker* Create(const char* pName, T pFunc, PlacementBuffer& pUserManagedAllocationMem);
 	};
 
+/////////////////////////////////////////////////////////////////////////
+// Tag dispatch
+/////////////////////////////////////////////////////////////////////////
 	struct void_tag {};		// for void return methods
 	struct value_tag {};	// methods that return non-void values
 	struct error_tag {};	// illegal dispatches
@@ -92,22 +111,27 @@ namespace ks {
 	template<typename T>	struct dtag<T, false>		{ typedef error_tag type; };
 
 
+/////////////////////////////////////////////////////////////////////////
+// TFuncInvoker
+/////////////////////////////////////////////////////////////////////////
 #define FI_HEADER		template<class INST, class TFUNC, typename RETURN_TYPE, int NARGS>
 
 	FI_HEADER
-	class FuncInvoker : public IFuncInvoker
+	class TFuncInvoker : public IFuncInvoker
 	{
-#define FI_CLASSNAME	FuncInvoker<INST, TFUNC, RETURN_TYPE, NARGS>
+#define FI_CLASSNAME	TFuncInvoker<INST, TFUNC, RETURN_TYPE, NARGS>
 
 	public:
-		FuncInvoker(const char* pName, TFUNC pFunc) : mFunc(pFunc)
+		TFuncInvoker(const char* pName, TFUNC pFunc)
+			: IFuncInvoker(pName)
+			, mFunc(pFunc)
 		{
 #if KSFI_HAVE_DEBUG_NAME
 			mDebugName = pName;
 #endif
 		}
 
-		~FuncInvoker()
+		~TFuncInvoker()
 		{
 #if KSFI_HAVE_DEBUG_NAME
 			mDebugName = NULL;
@@ -185,6 +209,8 @@ namespace ks {
 	//////////////////////////////////////////////////////////////////////////
 	// InvokerRegistry
 	// Helps keep track of all IFuncInvoker(s) so they can be cleaned up on program exit
+	// Do not use directly!
+	// TODO: Add threadsafety mechanism
 	//////////////////////////////////////////////////////////////////////////
 	class InvokerRegistry : private Array< IFuncInvoker* >
 	{
@@ -196,7 +222,9 @@ namespace ks {
 	public:
 		~InvokerRegistry();
 
-		static void Add(IFuncInvoker* pInvoker);
+		static int				Add(IFuncInvoker* pInvoker);
+		static void				Remove(IFuncInvoker* pInvoker);
+		static IFuncInvoker*	At(u32 Index);
 	};
 }
 

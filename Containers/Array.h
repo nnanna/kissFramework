@@ -549,24 +549,24 @@ namespace ks {
 				set_capacity(new_capacity);
 		}
 
-		void push_back(const_reference item)
+		int push_back(const_reference item)
 		{
 			if ( _size + 1 > _capacity)
 				grow();
 
 			details::copy_construct( _begin + _size, static_cast<TAllocator&>(*this), item );
-			++_size;
+			return _size++;
 		}
 
-		void push_back(value_type&& item)			{ emplace_back(std::move(item)); }
+		int push_back(value_type&& item)			{ return emplace_back(std::move(item)); }
 
-		void emplace_back(value_type&& item)
+		int emplace_back(value_type&& item)
 		{
 			if (_size + 1 > _capacity)
 				grow();
 
 			details::construct<value_type>( _begin + _size, static_cast<TAllocator&>(*this), std::move(item) );
-			++_size;
+			return _size++;
 		}
 
 		iterator erase( iterator item )

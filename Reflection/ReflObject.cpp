@@ -21,24 +21,21 @@
 
 namespace ks {
 
-	BindingsMap::BindingsMap(char* pAllocationBuffer, u32* pHashBuffer, u32 pNumBindings)
-		: mAllocationBuffer(pAllocationBuffer)
-		, mHashes(pHashBuffer)
-		, mNumBindings(pNumBindings)
-		, mCaret(0)
+	BindingsMap::BindingsMap()
+		: mHead(-1)
+		, mNumBindings(0)
 	{}
 
-	void BindingsMap::Add(const char* pName, IFuncInvoker::PlacementBuffer& pBuffer)
+	void BindingsMap::Add(IFuncInvoker::RegistryHandle& rHandle)
 	{
-		memcpy_s(mAllocationBuffer + (mCaret * FUNC_INVOKER_SIZE), FUNC_INVOKER_SIZE, *pBuffer, sizeof(IFuncInvoker::PlacementBuffer));
-		mHashes[mCaret++] = GetHash(pName);
-
-#define KSBM_OPTIMAL_LINEAR_SEARCH_SIZE	8
-
-		if (mCaret == mNumBindings && mNumBindings > KSBM_OPTIMAL_LINEAR_SEARCH_SIZE)
+		const u32 Index = rHandle.RegistryIndex;
+		if (mHead == -1)
 		{
-			// TODO: sort delegates? might be necessary if they're larger than KSBM_OPTIMAL_LINEAR_SEARCH_SIZE.
+			mHead = Index;
 		}
+
+		KS_ASSERT(mHead + mNumBindings == Index && "Must be contigous");
+		++mNumBindings;
 	}
 
 	u32 BindingsMap::GetHash(const char* pName) const
@@ -53,21 +50,19 @@ namespace ks {
 
 	IFuncInvoker* BindingsMap::Find(u32 pHash) const
 	{
-		// TODO: if IsSorted() {i.e mCaret == mNumBindings}.. do binary search.
-		for (u32 i = 0; i < mCaret; ++i)
+		// TODO: if IsSorted()/IsOptimised().. do binary search.
+		for (u32 i = 0; i < mNumBindings; ++i)
 		{
-			if (mHashes[i] == pHash)
-				return (IFuncInvoker*)(mAllocationBuffer + (i * FUNC_INVOKER_SIZE));
+			auto Invoker = InvokerRegistry::At(mHead + i);
+			if (Invoker->GetNameID() == pHash)
+				return Invoker;
 		}
 		return nullptr;
 	}
 
 	IFuncInvoker* BindingsMap::At(u32 index) const
 	{
-		if (index < mCaret)
-			return (IFuncInvoker*)(mAllocationBuffer + (index * FUNC_INVOKER_SIZE));
-
-		return nullptr;
+		return InvokerRegistry::At(mHead + index);
 	}
 
 //////////////////////////////////////////////////////////////////////////////
