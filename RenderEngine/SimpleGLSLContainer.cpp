@@ -210,8 +210,8 @@ namespace ks {
 
 		if (!mShaderProgram)
 		{
-			static const char vShaderHeader[] = "#define VERT_SHADER_ENABLED 1\n";
-			static const char fShaderHeader[] = "#define FRAG_SHADER_ENABLED 1\n";
+			static const char vShaderHeader[] = "#version 410\n #define VERT_SHADER_ENABLED 1\n";
+			static const char fShaderHeader[] = "#version 410\n #define FRAG_SHADER_ENABLED 1\n";
 			const int HEADER_LEN = sizeof(vShaderHeader);
 			KS_ASSERT(HEADER_LEN == sizeof(fShaderHeader) && "Both headers must be equal length!");
 
