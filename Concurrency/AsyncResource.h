@@ -30,14 +30,14 @@ namespace ks {
 		{
 			Reader(const T& pResource, ReadWriteLock& pGuard) : mResource(&pResource), mLck(pGuard.Read())
 			{}
-			Reader(Reader&& o) : mResource(o.mResource), mLck(std::move(o.mLck))
+			Reader(Reader&& o) : mResource(o.mResource), mLck(ks::move(o.mLck))
 			{
 				o.mResource = nullptr;
 			}
 
 			const T* operator->()			{ return mResource; }
 			operator const T*() const		{ return mResource; }
-			Reader& operator=(Reader&& o)	{ mResource = o.mResource; mLck = std::move(o.mLck); o.mResource = nullptr; }
+			Reader& operator=(Reader&& o)	{ mResource = o.mResource; mLck = ks::move(o.mLck); o.mResource = nullptr; }
 			void Release()					{ mLck.Release(); mResource = nullptr; }
 
 		private:
@@ -51,14 +51,14 @@ namespace ks {
 		{
 			Writer(T& pResource, ReadWriteLock& pGuard) : mResource(&pResource), mLck(pGuard.Write())
 			{}
-			Writer(Writer&& o) : mResource(o.mResource), mLck(std::move(o.mLck))
+			Writer(Writer&& o) : mResource(o.mResource), mLck(ks::move(o.mLck))
 			{
 				o.mResource = nullptr;
 			}
 
 			T* operator->()					{ return mResource; }
 			operator T*() const				{ return mResource; }
-			Writer& operator=(Writer&& o)	{ mResource = o.mResource; mLck = std::move(o.mLck); o.mResource = nullptr; }
+			Writer& operator=(Writer&& o)	{ mResource = o.mResource; mLck = ks::move(o.mLck); o.mResource = nullptr; }
 			void Release()					{ mLck.Release(); mResource = nullptr; }
 
 		private:

@@ -17,6 +17,8 @@
 //////////////////////////////////////////////////////////////////////////	
 
 #include "ReadWriteLock.h"
+#include "defines.h"
+#include "atomics.h"
 #include "Semaphore.h"
 #include "Debug.h"
 
@@ -86,7 +88,7 @@ namespace ks {
 
 	ReadWriteLock::ReadWriteLock() : mMutualExclusivityMask(0), mWritingThread(0), mReentrancyCount(0)
 	{
-		mEvent = (uintptr_t)new Event(true);
+		mEvent = new Event(true);
 	}
 
 	ReadWriteLock::~ReadWriteLock()
@@ -107,7 +109,8 @@ namespace ks {
 				return ReadGuard(this);
 			}
 
-			((Event*)mEvent)->Wait(1); //WaitForSingleObject((HANDLE)mEvent, 1);
+			if (mWritingThread) { ((Event*)mEvent)->Wait(1); }
+			//READ_BARRIER;
 			mask = mMutualExclusivityMask;
 		}
 		if ((omask & READ_COUNT_MASK) == 1)		// only 'first' reader should block the event
@@ -141,9 +144,9 @@ namespace ks {
 				return WriteGuard(this);
 			}
 
-			((Event*)mEvent)->Wait(); // WaitForSingleObject((HANDLE)mEvent, INFINITE);
+			((Event*)mEvent)->Wait();
 		}
-		((Event*)mEvent)->SetState(true);	// ResetEvent((HANDLE)mEvent);
+		((Event*)mEvent)->Reset();
 
 		KS_ASSERT(mWritingThread == 0 || mWritingThread == threadID);
 		mWritingThread = threadID;
@@ -168,19 +171,22 @@ namespace ks {
 		{
 			mWritingThread = 0;
 			const u32 lock_key = atomic_and(&mMutualExclusivityMask, READ_COUNT_MASK);	// [release]
+			//WRITE_BARRIER;		// necessary to update global cache & avoid redundant read-spin
 			if ((lock_key >> READ_COUNT_BITSIZE) != 1)
 			{
 				KS_ASSERT(!"ReadWriteLockException::eAlreadyUnlocked");
 			}
 
-			((Event*)mEvent)->Notify(); // SetEvent((HANDLE)mEvent);
+			((Event*)mEvent)->Notify();
 		}
 	}
 
 	void ReadWriteLock::Release(ReadGuard&)
 	{
 		if (atomic_decrement(&mMutualExclusivityMask) == 0)
-			((Event*)mEvent)->Notify(); // SetEvent((HANDLE)mEvent);
+		{
+			((Event*)mEvent)->Notify();
+		}
 	}
 
 }

@@ -34,6 +34,7 @@ namespace ks {
 	{
 	public:
 		Event(bool state = true);
+		void Reset()				{ SetState(true); }
 		void SetState(bool state);
 		void Notify();
 		void Wait(int timeoutMS = 0xffffffff);

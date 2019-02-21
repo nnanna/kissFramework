@@ -17,13 +17,10 @@
 /// WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //////////////////////////////////////////////////////////////////////////
 
-#include "atomics.h"
 
 namespace ks {
 	
 	typedef unsigned int u32;
-	
-	class ReadWriteLock;
 
 	struct ReadGuard
 	{
@@ -78,10 +75,10 @@ namespace ks {
 		void		Release(WriteGuard&);
 		void		Release(ReadGuard&);
 
-		u32					mMutualExclusivityMask;
-		ThreadID			mWritingThread;
-		int					mReentrancyCount;
-		uintptr_t			mEvent;
+		u32			mMutualExclusivityMask;
+		int			mWritingThread;
+		int			mReentrancyCount;
+		void*		mEvent;
 	};
 
 }
