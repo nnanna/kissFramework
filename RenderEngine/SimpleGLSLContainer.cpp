@@ -122,15 +122,6 @@ namespace ks {
 	}
 
 
-
-	void SimpleShaderContainer::enableVertProfile()			{}
-
-	void SimpleShaderContainer::enableFragProfile()			{}
-
-	void SimpleShaderContainer::disableVertProfile()		{}
-
-	void SimpleShaderContainer::disableFragProfile()		{}
-
 	void SimpleShaderContainer::updateProgramParameters()	{}
 
 	void SimpleShaderContainer::unbindVertProgram()			{}

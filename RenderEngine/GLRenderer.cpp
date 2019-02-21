@@ -89,14 +89,10 @@ namespace ks {
 		{
 			if (mMRUShader)
 			{
-				mMRUShader->disableVertProfile();
-				mMRUShader->disableFragProfile();
 				mMRUShader->unbindProgram();
 			}
 
 			shader->bindProgram();
-			shader->enableVertProfile();
-			shader->enableFragProfile();
 
 			shader->setVectorParameter(Material::gConstantsRegistry[sci_eye_pos], &invEye);
 			shader->setVectorParameter(Material::gConstantsRegistry[sci_light_pos], &invLight);

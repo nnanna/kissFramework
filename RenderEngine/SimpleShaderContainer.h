@@ -58,8 +58,10 @@ namespace ks {
 #define SHADER_KEY_DECL(x)	ks::ShaderKey( SHADER_CONSTANT_UID(x), #x )
 
 
-#define SP_POS				"in_pos"
-#define SP_NOR				"in_nor"
+#if SUPPORT_GL_1_2
+	#define SP_POS				"in_pos"
+	#define SP_NOR				"in_nor"
+#endif
 
 
 
@@ -103,16 +105,6 @@ namespace ks {
 		ShaderParameter		getNamedParam(const char* name);
 		ShaderParameter		getNamedParam(const u32 pKey);
 
-
-
-
-		void	enableVertProfile();
-
-		void	enableFragProfile();
-
-		void	disableVertProfile();
-
-		void	disableFragProfile();
 
 		template<typename N>
 		void	setFloatParameter(N param, const float value);
@@ -169,7 +161,7 @@ namespace ks {
 		char					mName[MAX_NAME];
 	};
 
-#define GL_DEBUGGING		1 && (defined _DEBUG)
+#define GL_DEBUGGING		!FINAL_BUILD
 
 #if GL_DEBUGGING
 #define CHECK_GL_ERROR		SimpleShaderContainer::shaderErrorCallback()
