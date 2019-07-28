@@ -121,6 +121,9 @@
     <ClCompile Include="..\Scene\Model.cpp">
       <Filter>Scene</Filter>
     </ClCompile>
+    <ClCompile Include="..\Concurrency\RaceConditionTrap.cpp">
+      <Filter>Concurrency</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Common\Debug.h">
@@ -266,6 +269,9 @@
     </ClInclude>
     <ClInclude Include="..\Common\Utility.h">
       <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Concurrency\RaceConditionTrap.h">
+      <Filter>Concurrency</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
